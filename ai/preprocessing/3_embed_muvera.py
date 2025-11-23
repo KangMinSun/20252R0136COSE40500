@@ -91,8 +91,8 @@ class MuveraLegalEmbedder:
             # 메모리 효율적인 FDE 설정
             self.fde_config = FixedDimensionalEncodingConfig(
                 dimension=embedding_dim,  # KURE-v1: 1024
-                num_repetitions=3,  # 메모리 절약: 5 -> 3
-                num_simhash_projections=4,  # 메모리 절약: 5 -> 4 (16 파티션)
+                num_repetitions=1,  # 메모리 절약: 5 -> 3
+                num_simhash_projections=3,  # 메모리 절약: 5 -> 4 (16 파티션)
                 seed=42,
                 encoding_type=EncodingType.AVERAGE,
                 projection_type=ProjectionType.DEFAULT_IDENTITY,
@@ -365,8 +365,8 @@ def main():
     print("\n메모리 효율적 설정으로 초기화 중...")
     embedder = MuveraLegalEmbedder(
         model_name="nlpai-lab/KURE-v1",
-        batch_size=8,           # 메모리 절약
-        chunk_batch_size=500    # 배치 단위 처리
+        batch_size=2,           # 메모리 절약
+        chunk_batch_size=50    # 배치 단위 처리
     )
 
     # 임베딩 생성
