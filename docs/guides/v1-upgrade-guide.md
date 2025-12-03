@@ -55,10 +55,10 @@ v1에서는 AI 분석 파이프라인, LangGraph 기반 채팅, 프론트엔드 
 - Git
 
 ### API 키 준비
-다음 API 키가 필요합니다 (최소 하나 이상):
+다음 API 키가 필요합니다:
 - **OpenAI API Key** - [platform.openai.com](https://platform.openai.com)
 - **Gemini API Key** - [aistudio.google.com](https://aistudio.google.com)
-- **Tavily API Key** (선택) - [tavily.com](https://tavily.com) - 웹 검색용
+- **Tavily API Key** (선택) - [tavily.com](https://tavily.com) - 에이전트 웹 검색용
 
 ---
 
@@ -87,6 +87,7 @@ docker ps
 ```
 
 다음 서비스가 실행되어야 합니다:
+- Pgadmin (5050)
 - PostgreSQL (5435)
 - Redis (6379)
 - Elasticsearch (9200)
