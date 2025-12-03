@@ -45,4 +45,16 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24      # 1일
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14             # 14일
 
+    # 5. LLM API 설정
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+
+    # LLM 모델 선택 (하이브리드 접근법)
+    LLM_RETRIEVAL_MODEL: str = os.getenv("LLM_RETRIEVAL_MODEL", "gemini-2.5-flash-lite")
+    LLM_REASONING_MODEL: str = os.getenv("LLM_REASONING_MODEL", "gpt-5-mini")
+    LLM_HYDE_MODEL: str = os.getenv("LLM_HYDE_MODEL", "gpt-4o")
+
+    # 6. 내부 서비스 인증
+    INTERNAL_API_KEY: str = os.getenv("INTERNAL_API_KEY", "")
+
 settings = Settings()

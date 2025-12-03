@@ -1,5 +1,5 @@
 from typing import List, Optional, Any, Dict
-from fastapi import APIRouter, Depends, UploadFile, File, status, HTTPException, Header
+from fastapi import APIRouter, Depends, UploadFile, File, status, HTTPException, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc, func
@@ -158,6 +158,32 @@ async def read_contracts(
     contracts = result.scalars().all() 
     
     return contracts
+
+@router.get("/{contract_id}", response_model=ContractDetailResponse, summary="계약서 상세 조회")
+async def read_contract_detail(
+    contract_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """
+    **[보호됨]** 특정 계약서의 상세 정보와 AI 분석 결과를 조회합니다.
+
+    - **요청 파라미터:**
+        - `contract_id`: 조회할 계약서 ID (path parameter)
+    - **응답 (Output):**
+        - 계약서 기본 정보 + file_url + analysis_result (JSON)
+    - **주요 오류 코드:**
+        - `401 Unauthorized`: 유효하지 않은 토큰
+        - `404 Not Found`: 계약서를 찾을 수 없음
+    """
+    stmt = select(Contract).where(Contract.id == contract_id, Contract.user_id == current_user.id)
+    result = await db.execute(stmt)
+    contract = result.scalar_one_or_none()
+
+    if not contract:
+        raise HTTPException(status_code=404, detail="계약서를 찾을 수 없습니다.")
+
+    return contract
 
 @router.delete("/{contract_id}", status_code=204, summary="계약서 삭제")
 async def delete_contract(
