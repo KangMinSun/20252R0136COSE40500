@@ -95,7 +95,8 @@ temp_img/
 
 # 자동 생성된 데이터
 storage/
-alembic/versions/*
-alembic/
 /backend/storage/
-/backend/alembic/versions/
+
+# Alembic (설정 파일은 추적, __pycache__만 무시)
+alembic/versions/__pycache__/
+/backend/alembic/versions/__pycache__/
