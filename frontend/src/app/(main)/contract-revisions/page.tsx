@@ -186,7 +186,7 @@ export default function ContractRevisionsPage() {
       )}
 
       {revisions.length === 0 ? (
-        <div className="liquid-glass-card p-8 text-center">
+        <div className="card-apple p-8 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-xl mb-4">
             <IconHistory size={28} className="text-gray-400" />
           </div>
@@ -223,7 +223,7 @@ export default function ContractRevisionsPage() {
                     </h3>
                   </div>
                 )}
-                <div className="liquid-glass-card p-4 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer group">
+                <div className="card-apple p-4 active:scale-[0.99] cursor-pointer group">
                   <div className="flex items-start gap-4">
                     {/* Version Badge */}
                     <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">

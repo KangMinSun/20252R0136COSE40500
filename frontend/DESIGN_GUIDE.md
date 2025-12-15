@@ -24,6 +24,13 @@
 
 ## 2. Color System
 
+### Page Background
+
+```css
+/* Warm beige background - subtle and professional */
+background-color: #f2f1ee;
+```
+
 ### Primary Colors (Neutrals)
 
 | Token | Value | Usage |
@@ -33,8 +40,8 @@
 | `gray-500` | `#737373` | Tertiary text, labels |
 | `gray-400` | `#a3a3a3` | Placeholder, disabled |
 | `gray-200` | `#e5e5e5` | Borders, dividers |
-| `gray-100` | `#f5f5f5` | Backgrounds, surfaces |
-| `gray-50` | `#fafafa` | Page background |
+| `gray-100` | `#f5f5f5` | Card backgrounds, surfaces |
+| `white` | `#ffffff` | Card backgrounds |
 
 ### Semantic Colors
 
@@ -152,16 +159,34 @@ gap: 16px; /* gap-4 */
 
 ## 5. Border Radius
 
+Apple 스타일의 부드러운 연속 곡선(Squircle) 느낌을 주기 위해 적절한 라운드를 사용합니다.
+
 | Token | Value | Usage |
 |-------|-------|-------|
-| `rounded-sm` | 6px | Small buttons |
-| `rounded` | 8px | Inputs, small cards |
-| `rounded-md` | 10px | Badges |
-| `rounded-lg` | 12px | Buttons |
-| `rounded-xl` | 16px | Cards |
-| `rounded-2xl` | 20px | Large cards |
-| `rounded-3xl` | 28px | Glass cards |
+| `rounded` | 8px | Badges, small elements |
+| `rounded-lg` | 12px | Buttons, inputs |
+| `rounded-xl` | 16px | Icon containers |
+| `rounded-[18px]` | 18px | Cards, containers |
 | `rounded-full` | 9999px | Pills, avatars |
+
+### Card Radius
+
+```css
+/* Standard card - 18px radius (Apple-style) */
+.card {
+  border-radius: 18px; /* rounded-[18px] */
+}
+
+/* Icon containers - 16px */
+.icon-container {
+  border-radius: 16px; /* rounded-xl */
+}
+
+/* Small elements (badges) - 8px */
+.badge {
+  border-radius: 8px; /* rounded */
+}
+```
 
 ---
 
@@ -197,22 +222,53 @@ box-shadow:
 
 ## 7. Components
 
-### Liquid Glass Card
+### Apple-Style Card (card-apple)
 
-기본 카드 스타일입니다. 모든 콘텐츠 컨테이너에 사용합니다.
+기본 카드 스타일입니다. 모든 콘텐츠 컨테이너에 사용합니다. Hover 시 살짝 떠오르는 효과와 inset shadow로 입체감을 줍니다.
 
 ```css
-.liquid-glass-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.15) 100%);
-  backdrop-filter: blur(60px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 28px;
+/* Tailwind: card-apple p-4 sm:p-5 */
+.card-apple {
+  background: white;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.04),
-    0 12px 48px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.card-apple:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.card-apple:active {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+```
+
+### Usage
+
+```tsx
+{/* Basic card */}
+<div className="card-apple p-5">
+  Card content
+</div>
+
+{/* Card with active press effect */}
+<div className="card-apple p-4 active:scale-[0.99] cursor-pointer">
+  Clickable card
+</div>
 ```
 
 ### Stat Card
@@ -220,15 +276,17 @@ box-shadow:
 통계 숫자를 표시하는 카드입니다.
 
 ```tsx
-<div className="liquid-glass-card p-5">
-  <div className="flex items-center justify-between mb-3">
-    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-      <Icon size={20} className="text-gray-600" />
+<div className="card-apple p-4 sm:p-5">
+  <div className="flex items-start justify-between mb-2">
+    <div>
+      <p className="text-xs font-medium text-gray-500 mb-1">Label</p>
+      <p className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+        {value}
+      </p>
     </div>
-    <span className="text-xs text-gray-400 font-medium">Label</span>
+    {/* Optional: Sparkline or Icon */}
   </div>
-  <p className="text-3xl font-bold text-gray-900 tracking-tight">{value}</p>
-  <p className="text-xs text-gray-500 mt-1">Description</p>
+  <p className="text-[11px] text-gray-400">Description</p>
 </div>
 ```
 
@@ -537,7 +595,7 @@ transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
 
 ```tsx
 // Dashboard Stat Card
-<div className="liquid-glass-card p-5 group hover:scale-[1.02] transition-all">
+<div className="card-apple p-5 group">
   <div className="flex items-center justify-between mb-3">
     <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center
                     group-hover:scale-110 transition-transform">

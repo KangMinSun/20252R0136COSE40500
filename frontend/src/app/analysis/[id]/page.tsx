@@ -15,10 +15,12 @@ import {
   IconDanger,
   IconChevronRight,
   IconChat,
-  IconSend,
   IconClose,
   IconInfo,
+  Logo,
 } from "@/components/icons";
+import { AIAvatar, AIAvatarSmall } from "@/components/ai-avatar";
+import { SwirlOrb } from "@/components/swirl-orb";
 import { cn } from "@/lib/utils";
 
 // PDF 뷰어는 클라이언트 사이드에서만 로드
@@ -81,80 +83,125 @@ interface NormalizedClause {
 
 interface RiskClauseItemProps {
   clause: NormalizedClause;
-  index: number;
 }
 
-function RiskClauseItem({ clause, index }: RiskClauseItemProps) {
+function RiskClauseItem({ clause }: RiskClauseItemProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const getLevelStyles = (level: string) => {
+  const getLevelIcon = (level: string) => {
     const l = level.toLowerCase();
-    if (l === "high") return "border-l-red-500 bg-gradient-to-r from-red-50/80 to-transparent";
-    if (l === "medium") return "border-l-amber-500 bg-gradient-to-r from-amber-50/80 to-transparent";
-    return "border-l-green-500 bg-gradient-to-r from-green-50/80 to-transparent";
+    if (l === "high") return <IconDanger size={16} className="text-red-500" />;
+    if (l === "medium") return <IconWarning size={16} className="text-amber-500" />;
+    return <IconCheck size={16} className="text-emerald-500" />;
+  };
+
+  const getLevelColor = (level: string) => {
+    const l = level.toLowerCase();
+    if (l === "high") return "text-red-600";
+    if (l === "medium") return "text-amber-600";
+    return "text-emerald-600";
+  };
+
+  const getLevelBg = (level: string) => {
+    const l = level.toLowerCase();
+    if (l === "high") return "bg-red-50";
+    if (l === "medium") return "bg-amber-50";
+    return "bg-emerald-50";
   };
 
   return (
-    <div className={cn(
-      "border-l-4 rounded-xl overflow-hidden transition-all duration-200",
-      getLevelStyles(clause.level),
-      expanded && "shadow-sm"
-    )}>
+    <div className="card-apple overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 text-left flex items-start gap-3 hover:bg-white/50 transition-colors"
+        className="w-full p-4 text-left flex items-start gap-3 hover:bg-gray-50/50 transition-colors"
       >
-        <span className={cn(
-          "flex-shrink-0 mt-0.5 transition-transform duration-200",
-          expanded && "rotate-90"
+        <div className={cn(
+          "flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center",
+          getLevelBg(clause.level)
         )}>
-          <IconChevronRight size={16} className="text-gray-400" />
-        </span>
+          {getLevelIcon(clause.level)}
+        </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
-            {clause.clauseNumber ? (
-              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+          <div className="flex items-center gap-2 mb-1">
+            {clause.clauseNumber && (
+              <span className="text-[11px] font-medium text-gray-400">
                 {clause.clauseNumber}
               </span>
-            ) : (
-              <span className="text-xs font-semibold text-gray-400">#{index + 1}</span>
             )}
-            <RiskLevelBadge level={clause.level} />
+            <span className={cn("text-[11px] font-semibold", getLevelColor(clause.level))}>
+              {clause.level.toUpperCase()}
+            </span>
           </div>
-          <p className="text-sm text-gray-800 line-clamp-2">{clause.text}</p>
+          <p className="text-sm text-gray-800 leading-relaxed line-clamp-2">{clause.text}</p>
         </div>
+        <span className={cn(
+          "flex-shrink-0 mt-1 transition-transform duration-200",
+          expanded && "rotate-90"
+        )}>
+          <IconChevronRight size={16} className="text-gray-300" />
+        </span>
       </button>
+
       <div className={cn(
         "overflow-hidden transition-all duration-300",
-        expanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+        expanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
       )}>
-        <div className="px-4 pb-4 pl-10 space-y-3">
+        <div className="px-4 pb-4 space-y-4">
+          {/* 위험 사유 - 가장 먼저, 왜 문제인지 설명 */}
           {clause.explanation && (
-            <div className="bg-white/60 rounded-lg p-3">
-              <p className="text-xs font-semibold text-gray-500 mb-1">위험 사유</p>
-              <p className="text-sm text-gray-700">{clause.explanation}</p>
+            <div className="bg-[#f8f7f4] rounded-[14px] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-5 h-5 rounded-[6px] bg-gray-200/80 flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-500">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 16V12M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">위험 사유</p>
+              </div>
+              <p className="text-[13px] text-gray-700 leading-relaxed">{clause.explanation}</p>
             </div>
           )}
-          {clause.legalBasis && (
-            <div className="bg-blue-50/60 rounded-lg p-3">
-              <p className="text-xs font-semibold text-blue-600 mb-1">법적 근거</p>
-              <p className="text-sm text-gray-700">{clause.legalBasis}</p>
-            </div>
-          )}
+
+          {/* 수정 제안 - 액션 가능한 항목으로 강조 */}
           {clause.suggestion && (
-            <div className="bg-white/60 rounded-lg p-3">
-              <p className="text-xs font-semibold text-gray-500 mb-1">수정 제안</p>
-              <p className="text-sm text-gray-700">{clause.suggestion}</p>
+            <div className="bg-emerald-50/80 border border-emerald-100 rounded-[14px] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-5 h-5 rounded-[6px] bg-emerald-100 flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-emerald-600">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">수정 제안</p>
+              </div>
+              <p className="text-[13px] text-gray-700 leading-relaxed">{clause.suggestion}</p>
             </div>
           )}
+
+          {/* 법적 근거 - 참고 정보 */}
+          {clause.legalBasis && (
+            <div className="bg-blue-50/60 border border-blue-100/80 rounded-[14px] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-5 h-5 rounded-[6px] bg-blue-100 flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-blue-600">
+                    <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">법적 근거</p>
+              </div>
+              <p className="text-[13px] text-gray-700 leading-relaxed">{clause.legalBasis}</p>
+            </div>
+          )}
+
+          {/* 참조 출처 - 부가 정보 */}
           {clause.sources && clause.sources.length > 0 && (
-            <div className="bg-gray-50/60 rounded-lg p-3">
-              <p className="text-xs font-semibold text-gray-500 mb-2">참조 출처 (CRAG)</p>
+            <div className="pt-2">
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-2">참조 출처</p>
               <div className="flex flex-wrap gap-1.5">
                 {clause.sources.map((source, idx) => (
                   <span
                     key={idx}
-                    className="text-xs bg-white px-2 py-1 rounded border border-gray-200 text-gray-600"
+                    className="text-[10px] bg-gray-100/80 px-2 py-0.5 rounded-[4px] text-gray-500"
                   >
                     {source}
                   </span>
@@ -230,6 +277,75 @@ function normalizeRiskClauses(analysis: ContractDetail["analysis_result"]): Norm
   return allClauses;
 }
 
+// 스크롤 인디케이터 컴포넌트
+interface ScrollableAreaProps {
+  children: React.ReactNode;
+  className?: string;
+  onMouseUp?: () => void;
+}
+
+function ScrollableArea({ children, className, onMouseUp }: ScrollableAreaProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showIndicator, setShowIndicator] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const checkScroll = () => {
+      // 스크롤 가능한지 확인 (콘텐츠가 컨테이너보다 큰 경우만)
+      const isScrollable = el.scrollHeight > el.clientHeight;
+      // 아래에 더 스크롤할 내용이 있는지 확인
+      const hasMoreBelow = el.scrollHeight - el.scrollTop - el.clientHeight > 20;
+      setShowIndicator(isScrollable && hasMoreBelow);
+    };
+
+    // 초기 체크는 약간의 딜레이 후 (콘텐츠 로딩 대기)
+    const timer = setTimeout(checkScroll, 100);
+    el.addEventListener("scroll", checkScroll);
+    window.addEventListener("resize", checkScroll);
+
+    // MutationObserver로 콘텐츠 변경 감지
+    const observer = new MutationObserver(checkScroll);
+    observer.observe(el, { childList: true, subtree: true });
+
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+      observer.disconnect();
+    };
+  }, []);
+
+  return (
+    <div className="relative flex-1 min-h-0">
+      <div
+        ref={scrollRef}
+        className={cn("h-full overflow-auto scrollable-area", className)}
+        onMouseUp={onMouseUp}
+      >
+        {children}
+      </div>
+      {/* Scroll indicator - subtle bottom fade with arrow */}
+      <div
+        className={cn(
+          "absolute bottom-0 left-0 right-0 h-12 pointer-events-none transition-opacity duration-300",
+          showIndicator ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-[#f2f1ee] to-transparent" />
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5">
+          <div className="w-6 h-6 rounded-full bg-white/90 shadow-sm border border-gray-200/60 flex items-center justify-center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+              <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface TextSelectionTooltipProps {
   position: { x: number; y: number };
   onAsk: () => void;
@@ -290,6 +406,7 @@ function ChatPanel({ contractId, initialQuestion, messages, setMessages, onClose
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [toolStatuses, setToolStatuses] = useState<ToolStatus[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
+  const [inputFocused, setInputFocused] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
   const initialQuestionProcessedRef = useRef<string | null>(null);
@@ -423,58 +540,131 @@ function ChatPanel({ contractId, initialQuestion, messages, setMessages, onClose
     setToolStatuses([]);
   }
 
+  // Quick prompt cards data
+  const quickPrompts = [
+    { icon: "shield", text: "이 계약서의 주요 위험 요소는?", color: "red" },
+    { icon: "scale", text: "위약금 조항이 적법한가요?", color: "amber" },
+    { icon: "document", text: "노동청에 신고하려면 어떻게 해야 하나요?", color: "blue" },
+  ];
+
   return (
-    <div className="flex flex-col h-full animate-slideInRight safe-area-inset">
+    <div className="flex flex-col h-full animate-slideInRight safe-area-inset bg-[#f2f1ee]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 bg-gray-50/50">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
-              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="currentColor" fillOpacity="0.2"/>
-              <path d="M12 6C8.69 6 6 8.69 6 12C6 13.1 6.3 14.12 6.81 15.1L6 18L8.9 17.19C9.88 17.7 10.9 18 12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6Z" fill="currentColor"/>
-              <circle cx="9" cy="12" r="1" fill="#1f2937"/>
-              <circle cx="12" cy="12" r="1" fill="#1f2937"/>
-              <circle cx="15" cy="12" r="1" fill="#1f2937"/>
+      <div className="relative bg-[#f2f1ee] pt-3 pb-4 px-4">
+        <div className="flex items-center justify-between">
+          {/* Back Button */}
+          <button
+            onClick={onClose}
+            className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:shadow-md active:scale-95 transition-all duration-200"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
             </svg>
+          </button>
+
+          {/* Center - Avatar + Name */}
+          <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
+            <AIAvatar size={36} isThinking={isStreaming} isSpeaking={!!streamingContent} />
+            <span className="text-base font-semibold text-gray-900 tracking-tight pr-1">AI Assistant</span>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 tracking-tight">AI 어시스턴트</h3>
-            <p className="text-[10px] text-gray-400 tracking-tight">LangGraph Agent</p>
-          </div>
+
+          {/* Menu Button */}
+          <button
+            className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:shadow-md active:scale-95 transition-all duration-200"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="6" r="1.5" />
+              <circle cx="12" cy="12" r="1.5" />
+              <circle cx="12" cy="18" r="1.5" />
+            </svg>
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
-        >
-          <IconClose size={18} />
-        </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 scrollable-area">
         {messages.length === 0 && !isStreaming && (
-          <div className="text-center py-8 sm:py-12 animate-fadeIn">
-            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-gray-100 rounded-2xl mb-3 sm:mb-4">
-              <IconChat size={24} className="text-gray-400 sm:w-7 sm:h-7" />
-            </div>
-            <p className="text-sm text-gray-500 tracking-tight">이 계약서에 대해 질문하세요</p>
-            <p className="text-xs text-gray-400 mt-1 tracking-tight">AI가 법령/판례를 검색하고 분석합니다</p>
+          <div className="animate-fadeIn">
+            {/* Welcome Section */}
+            <div className="text-center py-6">
+              {/* Swirl Orb */}
+              <div className="relative inline-flex items-center justify-center mb-6">
+                <SwirlOrb size={100} />
+              </div>
 
-            {/* Quick prompts */}
-            <div className="mt-5 sm:mt-6 space-y-2">
-              {[
-                "이 계약서의 주요 위험 요소는?",
-                "위약금 조항이 적법한가요?",
-                "노동청에 신고하려면 어떻게 해야 하나요?",
-              ].map((prompt) => (
+              <h3 className="text-base font-semibold text-gray-900 tracking-tight mb-1">
+                무엇이든 물어보세요
+              </h3>
+              <p className="text-sm text-gray-500 tracking-tight max-w-[240px] mx-auto">
+                AI가 법령과 판례를 검색하여 계약서를 분석합니다
+              </p>
+            </div>
+
+            {/* Quick Prompts - Card Style */}
+            <div className="space-y-2.5 mt-6">
+              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider px-1">추천 질문</p>
+              {quickPrompts.map((prompt, idx) => (
                 <button
-                  key={prompt}
-                  onClick={() => sendMessage(prompt)}
-                  className="block w-full text-left px-4 py-3 sm:py-2.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 tracking-tight min-h-[48px] sm:min-h-0"
+                  key={prompt.text}
+                  onClick={() => sendMessage(prompt.text)}
+                  className="group w-full text-left p-3.5 bg-white rounded-[14px] border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
+                  style={{ animationDelay: `${idx * 100}ms` }}
                 >
-                  {prompt}
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110",
+                      prompt.color === "red" && "bg-red-50 text-red-500",
+                      prompt.color === "amber" && "bg-amber-50 text-amber-500",
+                      prompt.color === "blue" && "bg-gray-100 text-gray-600"
+                    )}>
+                      {prompt.icon === "shield" && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                      )}
+                      {prompt.icon === "scale" && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 3v18M3 7l3 3-3 3M21 7l-3 3 3 3M6 21h12"/>
+                        </svg>
+                      )}
+                      {prompt.icon === "document" && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-700 font-medium tracking-tight group-hover:text-gray-900 transition-colors">
+                        {prompt.text}
+                      </p>
+                    </div>
+                    <IconChevronRight size={16} className="text-gray-300 group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-0.5" />
+                  </div>
                 </button>
               ))}
+            </div>
+
+            {/* Capabilities hint */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-[14px] border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-[6px] bg-[#3d5a47] flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                </div>
+                <p className="text-xs font-semibold text-gray-700 tracking-tight">AI 분석 기능</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {["법령 검색", "판례 분석", "위험 평가", "수정 제안"].map((cap) => (
+                  <div key={cap} className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                    <span className="w-1 h-1 rounded-full bg-[#3d5a47]" />
+                    {cap}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -489,15 +679,19 @@ function ChatPanel({ contractId, initialQuestion, messages, setMessages, onClose
             style={{ animationDelay: `${i * 30}ms` }}
           >
             {msg.role === "user" ? (
-              <div className="max-w-[85%] px-4 py-3 bg-gray-900 text-white text-sm rounded-2xl rounded-br-md">
+              <div className="max-w-[85%] px-4 py-3 bg-gray-900 text-white text-sm rounded-[16px] rounded-br-[4px] shadow-sm">
                 {msg.content}
               </div>
             ) : (
-              <div className="max-w-full">
-                <div className="prose prose-sm prose-gray max-w-none bg-gray-50/80 rounded-2xl rounded-bl-md px-4 py-3">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
+              <div className="max-w-full flex gap-2.5">
+                {/* AI Avatar */}
+                <AIAvatarSmall size={28} className="mt-1" />
+                <div className="flex-1 min-w-0">
+                  <div className="prose prose-sm prose-gray max-w-none bg-white rounded-[16px] rounded-tl-[4px] px-4 py-3 shadow-sm border border-gray-100">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             )}
@@ -509,10 +703,10 @@ function ChatPanel({ contractId, initialQuestion, messages, setMessages, onClose
           <div className="space-y-3 animate-fadeIn">
             {/* Tool execution status */}
             {(currentStep || toolStatuses.length > 0) && (
-              <div className="bg-blue-50/80 rounded-xl p-3 space-y-2">
+              <div className="rounded-[14px] bg-gray-50 border border-gray-100 p-4 space-y-2.5">
                 {currentStep && (
-                  <div className="flex items-center gap-2 text-xs text-blue-600">
-                    <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="flex items-center gap-2.5 text-xs text-gray-700 font-medium">
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
                     {currentStep}
                   </div>
                 )}
@@ -520,16 +714,21 @@ function ChatPanel({ contractId, initialQuestion, messages, setMessages, onClose
                   <div
                     key={idx}
                     className={cn(
-                      "flex items-center gap-2 text-xs transition-all duration-300",
-                      tool.status === "complete" ? "text-green-600" : "text-blue-600"
+                      "flex items-center gap-2.5 text-xs transition-all duration-500",
+                      tool.status === "complete" ? "text-emerald-600" : "text-gray-600"
                     )}
                   >
-                    {tool.status === "searching" ? (
-                      <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <IconCheck size={12} />
-                    )}
-                    <span>{tool.message}</span>
+                    <div className={cn(
+                      "w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300",
+                      tool.status === "complete" ? "bg-emerald-100" : "bg-gray-200"
+                    )}>
+                      {tool.status === "searching" ? (
+                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <IconCheck size={12} />
+                      )}
+                    </div>
+                    <span className="font-medium">{tool.message}</span>
                   </div>
                 ))}
               </div>
@@ -537,12 +736,29 @@ function ChatPanel({ contractId, initialQuestion, messages, setMessages, onClose
 
             {/* Streaming content */}
             {streamingContent && (
-              <div className="max-w-full">
-                <div className="prose prose-sm prose-gray max-w-none bg-gray-50/80 rounded-2xl rounded-bl-md px-4 py-3">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {streamingContent}
-                  </ReactMarkdown>
-                  <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-0.5" />
+              <div className="max-w-full flex gap-2.5">
+                <AIAvatarSmall size={28} isThinking={true} className="mt-1" />
+                <div className="flex-1 min-w-0">
+                  <div className="prose prose-sm prose-gray max-w-none bg-white rounded-[16px] rounded-tl-[4px] px-4 py-3 shadow-sm border border-gray-100">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {streamingContent}
+                    </ReactMarkdown>
+                    <span className="inline-block w-2 h-4 bg-gray-400 rounded-[2px] animate-pulse ml-0.5" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Typing indicator when no content yet */}
+            {!streamingContent && !currentStep && toolStatuses.length === 0 && (
+              <div className="flex gap-2.5">
+                <AIAvatarSmall size={28} isThinking={true} />
+                <div className="bg-white rounded-[16px] rounded-tl-[4px] px-4 py-3 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
                 </div>
               </div>
             )}
@@ -553,39 +769,110 @@ function ChatPanel({ contractId, initialQuestion, messages, setMessages, onClose
       </div>
 
       {/* Input */}
-      <div className="p-3 sm:p-4 border-t border-gray-100 bg-white pb-safe">
+      <div className="p-4 sm:p-5 bg-[#f2f1ee] pb-safe">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             sendMessage(input);
           }}
-          className="flex gap-2"
+          className="relative"
         >
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="질문을 입력하세요..."
-            className="input-field text-sm h-11 sm:h-auto"
-            disabled={isStreaming}
-          />
-          {isStreaming ? (
-            <button
-              type="button"
-              onClick={stopGeneration}
-              className="px-4 py-2.5 bg-red-500 text-white rounded-xl shadow-sm hover:bg-red-600 transition-all duration-200 min-w-[48px] min-h-[44px] flex items-center justify-center flex-shrink-0"
-            >
-              <IconClose size={18} />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!input.trim()}
-              className="px-4 py-2.5 bg-gray-900 text-white rounded-xl shadow-sm hover:bg-gray-800 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 min-w-[48px] min-h-[44px] flex items-center justify-center flex-shrink-0"
-            >
-              <IconSend size={18} />
-            </button>
-          )}
+          {/* Premium Input Card */}
+          <div className={cn(
+            "bg-white rounded-[20px] shadow-sm transition-all duration-300",
+            inputFocused && "shadow-md ring-1 ring-gray-200"
+          )}>
+            {/* Input Area */}
+            <div className="px-5 py-4">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                placeholder="무엇이든 물어보세요..."
+                className="w-full bg-transparent text-base outline-none placeholder:text-gray-400 text-gray-800"
+                disabled={isStreaming}
+              />
+            </div>
+
+            {/* Bottom Bar */}
+            <div className="flex items-center justify-between px-4 pb-3">
+              {/* Left Icons */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-[10px] transition-colors"
+                  title="법령 검색"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                    <path d="M2 12h20"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-[10px] transition-colors"
+                  title="판례 검색"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-[10px] transition-colors"
+                  title="음성 입력"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 10v3a7 7 0 0 0 14 0v-3"/>
+                    <line x1="9" y1="16" x2="9" y2="21"/>
+                    <line x1="5" y1="21" x2="13" y2="21"/>
+                    <rect x="5" y="3" width="8" height="13" rx="4"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Send Button */}
+              {isStreaming ? (
+                <button
+                  type="button"
+                  onClick={stopGeneration}
+                  className="w-11 h-11 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className={cn(
+                    "w-11 h-11 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center flex-shrink-0",
+                    input.trim()
+                      ? "bg-[#2d4a3a] text-white hover:bg-[#243d30] hover:scale-105 active:scale-95 hover:shadow-xl"
+                      : "bg-[#2d4a3a]/40 text-white/70 cursor-not-allowed"
+                  )}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5" />
+                    <polyline points="5 12 12 5 19 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Powered by hint */}
+          <div className="flex items-center justify-center gap-1.5 mt-3">
+            <span className="text-[10px] text-gray-500/70">Powered by</span>
+            <Logo size={12} color="#6b7280" className="opacity-60" />
+            <span className="text-[10px] text-gray-500/70">DocScanner AI</span>
+          </div>
         </form>
       </div>
     </div>
@@ -720,7 +1007,7 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-[#f2f1ee]">
         <div className="flex flex-col items-center gap-3 animate-fadeIn">
           <IconLoading size={32} className="text-gray-400" />
           <p className="text-sm text-gray-500 tracking-tight">분석 결과를 불러오는 중...</p>
@@ -731,7 +1018,7 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
 
   if (error || !contract) {
     return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-gray-50/50 to-white">
+      <div className="min-h-[100dvh] bg-[#f2f1ee]">
         <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/80 sticky top-0 z-10">
           <div className="px-4 sm:px-5 h-14 flex items-center">
             <Link href="/" className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors min-h-[44px]">
@@ -755,20 +1042,21 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
   const summary = analysis?.analysis_summary || analysis?.summary;
 
   return (
-    <div className={cn("min-h-[100dvh] bg-gray-50/30 flex flex-col md:flex-row", isResizing && "select-none cursor-ew-resize")}>
+    <div className={cn("h-[100dvh] bg-[#f2f1ee] flex flex-col", isResizing && "select-none cursor-ew-resize")}>
       {/* Main Content */}
       <div
-        className="flex-1 flex flex-col transition-all duration-300"
+        className="flex-1 flex flex-col min-h-0 transition-all duration-300"
         style={{ marginRight: showChat && !isMobile ? chatWidth : 0 }}
       >
-        <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200/80 sticky top-0 z-10">
-          <div className="px-3 sm:px-5 h-14 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+        <header className="bg-[#f2f1ee] flex-shrink-0 pt-3">
+          <div className="px-4 sm:px-6 h-12 flex items-center justify-between gap-4">
+            {/* Left: Back + Title */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <Link
                 href="/"
-                className="p-2.5 -ml-1 sm:-ml-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 flex-shrink-0"
+                className="flex items-center justify-center w-9 h-9 bg-white hover:bg-gray-100 rounded-[10px] transition-all duration-200 flex-shrink-0 group shadow-sm border border-gray-200/60"
               >
-                <IconArrowLeft size={18} />
+                <IconArrowLeft size={16} className="text-gray-600 group-hover:text-gray-900 transition-colors" />
               </Link>
               <div className="min-w-0 flex-1">
                 <h1 className="text-sm font-semibold text-gray-900 truncate tracking-tight">
@@ -776,53 +1064,48 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
                 </h1>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+
+            {/* Right: Risk Badge */}
+            <div className="flex items-center gap-3 flex-shrink-0">
               {analysis?.risk_level && <RiskLevelBadge level={analysis.risk_level} />}
-              <button
-                onClick={() => setShowChat(true)}
-                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 hover:shadow transition-all duration-200 min-h-[44px]"
-              >
-                <IconChat size={16} />
-                <span className="hidden xs:inline tracking-tight">AI 질문</span>
-              </button>
             </div>
           </div>
         </header>
 
         {/* Mobile View Switcher */}
-        <div className="md:hidden flex border-b border-gray-200 bg-white">
-          <button
-            onClick={() => setMobileView("pdf")}
-            className={cn(
-              "flex-1 py-3 text-sm font-medium transition-all duration-200 relative tracking-tight",
-              mobileView === "pdf" ? "text-gray-900" : "text-gray-500"
-            )}
-          >
-            원본 문서
-            {mobileView === "pdf" && (
-              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-gray-900 rounded-full" />
-            )}
-          </button>
-          <button
-            onClick={() => setMobileView("analysis")}
-            className={cn(
-              "flex-1 py-3 text-sm font-medium transition-all duration-200 relative tracking-tight",
-              mobileView === "analysis" ? "text-gray-900" : "text-gray-500"
-            )}
-          >
-            분석 결과
-            {mobileView === "analysis" && (
-              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-gray-900 rounded-full" />
-            )}
-          </button>
+        <div className="md:hidden flex items-center justify-center p-3 bg-[#f2f1ee] flex-shrink-0">
+          <div className="flex items-center gap-1 bg-white rounded-xl p-1 shadow-sm border border-gray-200/60">
+            <button
+              onClick={() => setMobileView("pdf")}
+              className={cn(
+                "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 tracking-tight min-w-[100px]",
+                mobileView === "pdf"
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              원본 문서
+            </button>
+            <button
+              onClick={() => setMobileView("analysis")}
+              className={cn(
+                "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 tracking-tight min-w-[100px]",
+                mobileView === "analysis"
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              분석 결과
+            </button>
+          </div>
         </div>
 
-        <div className="flex-1 flex animate-fadeIn overflow-hidden">
+        <div className="flex-1 flex animate-fadeIn min-h-0">
           {/* Left Panel - PDF Viewer (Desktop: always visible, Mobile: conditional) */}
           <div className={cn(
-            "flex-col bg-white",
-            // Desktop: 50% width
-            "md:flex md:w-1/2 md:border-r md:border-gray-200/80",
+            "flex-col min-h-0",
+            // Desktop: 50% width with subtle shadow separator
+            "md:flex md:w-1/2 md:shadow-[1px_0_0_0_rgba(0,0,0,0.06)]",
             // Mobile: full width or hidden
             mobileView === "pdf" ? "flex w-full" : "hidden"
           )}>
@@ -839,165 +1122,181 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
 
           {/* Right Panel - Analysis (Desktop: always visible, Mobile: conditional) */}
           <div className={cn(
-            "flex-col bg-white",
+            "flex-col bg-[#f2f1ee] min-h-0",
             // Desktop: 50% width
             "md:flex md:w-1/2",
             // Mobile: full width or hidden
             mobileView === "analysis" ? "flex w-full" : "hidden"
           )}>
-            <div className="flex border-b border-gray-200 px-1 sm:px-2 overflow-x-auto scrollbar-hide">
-              {[
-                { key: "overview", label: "개요" },
-                { key: "clauses", label: `위험 조항 (${riskClauses.length})` },
-                { key: "text", label: "전체 텍스트" },
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key as typeof activeTab)}
-                  className={cn(
-                    "flex-1 px-3 sm:px-4 py-3 text-sm font-medium transition-all duration-200 relative whitespace-nowrap tracking-tight",
-                    activeTab === tab.key
-                      ? "text-gray-900"
-                      : "text-gray-500 hover:text-gray-700"
-                  )}
-                >
-                  {tab.label}
-                  {activeTab === tab.key && (
-                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gray-900 rounded-full" />
-                  )}
-                </button>
-              ))}
+            <div className="bg-[#f2f1ee] h-12 flex items-center px-4 flex-shrink-0">
+              <div className="flex items-center gap-1 bg-white/80 rounded-[10px] p-0.5 border border-gray-200/60">
+                {[
+                  { key: "overview", label: "개요" },
+                  { key: "clauses", label: `위험 조항 (${riskClauses.length})` },
+                  { key: "text", label: "텍스트" },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as typeof activeTab)}
+                    className={cn(
+                      "px-3 py-1.5 text-[11px] font-medium rounded-[8px] transition-all duration-200 whitespace-nowrap tracking-tight",
+                      activeTab === tab.key
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-3 sm:p-5" onMouseUp={handleRightPanelTextSelect}>
+            <ScrollableArea className="p-4 sm:p-6" onMouseUp={handleRightPanelTextSelect}>
               {activeTab === "overview" && (
-                <div className="space-y-5 animate-fadeIn">
-                  {summary && (
-                    <div className="card p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-2">요약</h3>
-                      <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
+                <div className="space-y-6 animate-fadeIn">
+                  {/* Risk Level Hero */}
+                  <div className="card-apple p-5">
+                    <div className="flex items-start gap-4">
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0",
+                        analysis?.risk_level?.toLowerCase() === "high" ? "bg-red-100" :
+                        analysis?.risk_level?.toLowerCase() === "medium" ? "bg-amber-100" : "bg-green-100"
+                      )}>
+                        {analysis?.risk_level?.toLowerCase() === "high" ? (
+                          <IconDanger size={28} className="text-red-500" />
+                        ) : analysis?.risk_level?.toLowerCase() === "medium" ? (
+                          <IconWarning size={28} className="text-amber-500" />
+                        ) : (
+                          <IconCheck size={28} className="text-green-500" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={cn(
+                            "text-xs font-semibold px-2 py-0.5 rounded-full",
+                            analysis?.risk_level?.toLowerCase() === "high" ? "bg-red-100 text-red-600" :
+                            analysis?.risk_level?.toLowerCase() === "medium" ? "bg-amber-100 text-amber-600" : "bg-green-100 text-green-600"
+                          )}>
+                            {analysis?.risk_level?.toUpperCase() || "N/A"} RISK
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          {summary || "분석 결과를 확인하세요."}
+                        </p>
+                      </div>
                     </div>
-                  )}
+                  </div>
 
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    <div className="card p-3 sm:p-4 text-center">
-                      <p className="text-[10px] sm:text-xs font-medium text-gray-500 mb-0.5 sm:mb-1 tracking-tight">위험도</p>
-                      <p className="text-base sm:text-lg font-semibold text-gray-900">
-                        {analysis?.risk_level || "N/A"}
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="card-static p-4">
+                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">발견된 이슈</p>
+                      <p className="text-2xl font-bold text-gray-900 tracking-tight">{riskClauses.length}</p>
+                    </div>
+                    <div className="card-static p-4">
+                      <p className="text-[11px] font-medium text-red-500 uppercase tracking-wider mb-2">고위험</p>
+                      <p className="text-2xl font-bold text-red-600 tracking-tight">
+                        {riskClauses.filter((c: NormalizedClause) => c.level.toLowerCase() === "high").length}
                       </p>
                     </div>
-                    <div className="card p-3 sm:p-4 text-center">
-                      <p className="text-[10px] sm:text-xs font-medium text-gray-500 mb-0.5 sm:mb-1 tracking-tight">위험 조항</p>
-                      <p className="text-base sm:text-lg font-semibold text-gray-900">{riskClauses.length}</p>
-                    </div>
-                    <div className="card p-3 sm:p-4 text-center">
-                      <p className="text-[10px] sm:text-xs font-medium text-gray-500 mb-0.5 sm:mb-1 tracking-tight">고위험</p>
-                      <p className="text-base sm:text-lg font-semibold text-red-600">
-                        {riskClauses.filter((c: NormalizedClause) => c.level.toLowerCase() === "high").length}
+                    <div className="card-static p-4">
+                      <p className="text-[11px] font-medium text-amber-500 uppercase tracking-wider mb-2">주의</p>
+                      <p className="text-2xl font-bold text-amber-600 tracking-tight">
+                        {riskClauses.filter((c: NormalizedClause) => c.level.toLowerCase() === "medium").length}
                       </p>
                     </div>
                   </div>
 
+                  {/* 체불 예상액 - More prominent */}
+                  {analysis?.stress_test && (analysis.stress_test.annual_underpayment || 0) > 0 && (
+                    <div className="card-apple p-5 bg-gradient-to-br from-red-50 to-white border-red-100">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center">
+                          <IconWarning size={18} className="text-red-500" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-gray-900">예상 체불 금액</h3>
+                      </div>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div>
+                          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">월간</p>
+                          <p className="text-xl font-bold text-red-600 tracking-tight">
+                            {(analysis.stress_test.total_underpayment || 0).toLocaleString()}
+                            <span className="text-sm font-medium ml-0.5">원</span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">연간</p>
+                          <p className="text-xl font-bold text-red-600 tracking-tight">
+                            {(analysis.stress_test.annual_underpayment || 0).toLocaleString()}
+                            <span className="text-sm font-medium ml-0.5">원</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 주요 이슈 */}
                   {riskClauses.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">주요 이슈</h3>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-semibold text-gray-900 tracking-tight">주요 이슈</h3>
+                        {riskClauses.length > 3 && (
+                          <button
+                            onClick={() => setActiveTab("clauses")}
+                            className="text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-0.5"
+                          >
+                            전체 보기
+                            <IconChevronRight size={14} />
+                          </button>
+                        )}
+                      </div>
                       <div className="space-y-3">
                         {riskClauses.slice(0, 3).map((clause, i) => (
                           <RiskClauseItem
                             key={i}
                             clause={clause}
-                            index={i}
                           />
                         ))}
-                        {riskClauses.length > 3 && (
-                          <button
-                            onClick={() => setActiveTab("clauses")}
-                            className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-                          >
-                            전체 {riskClauses.length}개 조항 보기 →
-                          </button>
-                        )}
                       </div>
                     </div>
                   )}
 
-                  {/* 체불 예상액 */}
-                  {analysis?.stress_test && (analysis.stress_test.annual_underpayment || 0) > 0 && (
-                    <div className="card p-4 border-l-4 border-l-red-500">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">체불 예상액</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">월간 체불 예상</p>
-                          <p className="text-lg font-bold text-red-600">
-                            {(analysis.stress_test.total_underpayment || 0).toLocaleString()}원
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">연간 체불 예상</p>
-                          <p className="text-lg font-bold text-red-600">
-                            {(analysis.stress_test.annual_underpayment || 0).toLocaleString()}원
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* AI 분석 품질 - 내부 품질 지표로 덜 강조 */}
-                  {analysis?.judgment && (
-                    <div className="card p-4 bg-gray-50/50 border-gray-100">
-                      <details className="group">
-                        <summary className="flex items-center justify-between cursor-pointer list-none">
-                          <h3 className="text-xs font-medium text-gray-500">분석 품질 지표</h3>
-                          <span className={cn(
-                            "px-2 py-0.5 text-xs rounded",
-                            analysis.judgment.is_reliable ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
-                          )}>
-                            {Math.round((analysis.judgment.overall_score || 0) * 100)}%
-                          </span>
-                        </summary>
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p className="text-xs text-gray-500 mb-2">
-                            AI 분석의 내부 품질 검증 결과입니다. 계약서 위험도와는 별개입니다.
-                          </p>
-                          {analysis.judgment.verdict && (
-                            <p className="text-xs text-gray-600">{analysis.judgment.verdict}</p>
-                          )}
-                        </div>
-                      </details>
-                    </div>
-                  )}
-
-
+                  {/* 법률 참조 */}
                   {analysis?.crag_result?.final_answer && (
-                    <div className="card p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-1.5">
-                        <IconInfo size={14} className="text-blue-500" />
-                        법률 참조
-                      </h3>
-                      <p className="text-sm text-gray-700 leading-relaxed">
+                    <div className="card-apple p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <IconInfo size={18} className="text-blue-500" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-gray-900">법률 참조</h3>
+                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
                         {analysis.crag_result.final_answer}
                       </p>
                     </div>
                   )}
+
                 </div>
               )}
 
               {activeTab === "clauses" && (
-                <div className="space-y-3 animate-fadeIn">
+                <div className="animate-fadeIn">
                   {riskClauses.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="inline-flex items-center justify-center w-14 h-14 bg-green-100 rounded-2xl mb-4">
-                        <IconCheck size={28} className="text-green-600" />
+                    <div className="text-center py-16">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-2xl mb-4">
+                        <IconCheck size={32} className="text-green-500" />
                       </div>
-                      <p className="text-sm font-medium text-gray-600">위험 조항이 발견되지 않았습니다</p>
-                      <p className="text-xs text-gray-400 mt-1">이 계약서는 안전한 것으로 보입니다</p>
+                      <p className="text-base font-semibold text-gray-900 tracking-tight">위험 조항 없음</p>
+                      <p className="text-sm text-gray-500 mt-1">이 계약서는 안전한 것으로 보입니다</p>
                     </div>
                   ) : (
                     <>
                       {/* 정렬 옵션 */}
-                      <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
-                        <span className="text-[11px] text-gray-400 uppercase tracking-wider">정렬</span>
-                        <div className="flex items-center gap-0.5 bg-gray-100/80 rounded-full p-0.5">
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm text-gray-500">
+                          총 <span className="font-semibold text-gray-900">{riskClauses.length}</span>개 이슈
+                        </p>
+                        <div className="flex items-center gap-0.5 bg-white rounded-full p-0.5 border border-gray-200">
                           {[
                             { key: "default", label: "기본" },
                             { key: "risk", label: "위험도" },
@@ -1007,9 +1306,9 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
                               key={option.key}
                               onClick={() => setSortBy(option.key as typeof sortBy)}
                               className={cn(
-                                "px-3 py-1 text-xs font-medium rounded-full transition-all duration-200",
+                                "px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200",
                                 sortBy === option.key
-                                  ? "bg-white text-gray-900 shadow-sm"
+                                  ? "bg-gray-900 text-white"
                                   : "text-gray-500 hover:text-gray-700"
                               )}
                             >
@@ -1019,24 +1318,27 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
                         </div>
                       </div>
                       {/* 정렬된 위험 조항 목록 */}
-                      {sortRiskClauses(riskClauses).map((clause, i) => (
-                        <RiskClauseItem
-                          key={i}
-                          clause={clause}
-                          index={i}
-                        />
-                      ))}
+                      <div className="space-y-3">
+                        {sortRiskClauses(riskClauses).map((clause, i) => (
+                          <RiskClauseItem
+                            key={i}
+                            clause={clause}
+                          />
+                        ))}
+                      </div>
                     </>
                   )}
                 </div>
               )}
 
               {activeTab === "text" && (
-                <div className="card p-5 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap animate-fadeIn">
-                  {contract.extracted_text || "추출된 텍스트가 없습니다"}
+                <div className="card-apple p-5 animate-fadeIn">
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {contract.extracted_text || "추출된 텍스트가 없습니다"}
+                  </p>
                 </div>
               )}
-            </div>
+            </ScrollableArea>
           </div>
         </div>
       </div>
@@ -1088,6 +1390,17 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
             }}
           />
         </div>
+      )}
+
+      {/* Floating AI Button */}
+      {!showChat && (
+        <button
+          onClick={() => setShowChat(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-white border border-gray-200/80 rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 z-30 flex items-center justify-center"
+          title="AI에게 질문하기"
+        >
+          <AIAvatarSmall size={32} />
+        </button>
       )}
 
       {/* Text Selection Tooltip */}

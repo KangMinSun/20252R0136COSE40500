@@ -186,19 +186,19 @@ export default function HistoryPage() {
     <>
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="liquid-glass-card p-4">
+        <div className="card-apple p-4">
           <p className="text-xs text-gray-500 mb-1">전체</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
-        <div className="liquid-glass-card p-4">
+        <div className="card-apple p-4">
           <p className="text-xs text-green-600 mb-1">완료</p>
           <p className="text-2xl font-bold text-green-700">{stats.completed}</p>
         </div>
-        <div className="liquid-glass-card p-4">
+        <div className="card-apple p-4">
           <p className="text-xs text-blue-600 mb-1">진행중</p>
           <p className="text-2xl font-bold text-blue-700">{stats.processing}</p>
         </div>
-        <div className="liquid-glass-card p-4">
+        <div className="card-apple p-4">
           <p className="text-xs text-red-600 mb-1">실패</p>
           <p className="text-2xl font-bold text-red-700">{stats.failed}</p>
         </div>
@@ -271,7 +271,7 @@ export default function HistoryPage() {
               <div
                 key={contract.id}
                 className={cn(
-                  "liquid-glass-card p-4 active:scale-[0.99] transition-all",
+                  "card-apple p-4 active:scale-[0.99]",
                   deletingId === contract.id && "opacity-50 pointer-events-none",
                   contract.status === "COMPLETED" && "cursor-pointer"
                 )}
@@ -321,7 +321,7 @@ export default function HistoryPage() {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden sm:block liquid-glass-card overflow-hidden">
+          <div className="hidden sm:block card-apple overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="bg-white/40 border-b border-white/50">

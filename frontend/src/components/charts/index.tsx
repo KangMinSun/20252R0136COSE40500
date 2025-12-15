@@ -58,6 +58,10 @@ export function BarChart({
     }
   };
 
+  // 값 레이블 높이를 고려한 바 영역 높이
+  const valueHeight = showValues ? 20 : 0;
+  const barAreaHeight = height - valueHeight;
+
   return (
     <div className={cn("w-full", className)}>
       <div
@@ -65,13 +69,15 @@ export function BarChart({
         style={{ height: `${height}px` }}
       >
         {data.map((item, index) => {
-          const barHeight = (item.value / maxValue) * 100;
+          // 픽셀 단위로 바 높이 계산
+          const barHeightPx = Math.max((item.value / maxValue) * barAreaHeight, 4);
           const isActive = item.value > 0;
 
           return (
             <div
               key={index}
-              className="flex-1 flex flex-col items-center gap-1"
+              className="flex-1 flex flex-col items-center justify-end gap-1"
+              style={{ height: `${height}px` }}
             >
               {showValues && item.value > 0 && (
                 <span className="text-xs font-semibold text-gray-700 tracking-tight">
@@ -80,13 +86,13 @@ export function BarChart({
               )}
               <div
                 className={cn(
-                  "w-full rounded-t-md transition-all duration-300 ease-out",
+                  "w-full transition-all duration-300 ease-out",
                   getBarGradient(item.color, isActive),
                   isActive && getBarShadow(item.color)
                 )}
                 style={{
-                  height: `${Math.max(barHeight, 4)}%`,
-                  minHeight: "4px",
+                  height: `${barHeightPx}px`,
+                  borderRadius: "6px 6px 0 0",
                 }}
               />
             </div>

@@ -139,7 +139,7 @@ export default function CertificationPage() {
           </div>
 
           {contracts.length === 0 ? (
-            <div className="liquid-glass-card p-8 text-center">
+            <div className="card-apple p-8 text-center">
               <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-xl mb-4">
                 <IconDocument size={28} className="text-gray-400" />
               </div>
@@ -162,7 +162,7 @@ export default function CertificationPage() {
                 <button
                   key={contract.id}
                   onClick={() => handleSelectContract(contract.id)}
-                  className="w-full liquid-glass-card p-4 text-left hover:scale-[1.01] active:scale-[0.99] transition-all group"
+                  className="w-full card-apple p-4 text-left active:scale-[0.99] group"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -199,7 +199,7 @@ export default function CertificationPage() {
 
           {/* Selected Contract */}
           {selectedContract && (
-            <div className="liquid-glass-card p-4 mb-6">
+            <div className="card-apple p-4 mb-6">
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-green-100 text-green-600">
                   <IconCheck size={20} />
@@ -222,7 +222,7 @@ export default function CertificationPage() {
 
           <div className="space-y-6">
             {/* Sender Info */}
-            <div className="liquid-glass-card p-5">
+            <div className="card-apple p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-tight">발신인 정보</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -253,7 +253,7 @@ export default function CertificationPage() {
             </div>
 
             {/* Receiver Info */}
-            <div className="liquid-glass-card p-5">
+            <div className="card-apple p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-tight">수신인 정보</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -284,7 +284,7 @@ export default function CertificationPage() {
             </div>
 
             {/* Demand Items */}
-            <div className="liquid-glass-card p-5">
+            <div className="card-apple p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-gray-900 tracking-tight">요구 사항</h3>
                 <button
@@ -326,7 +326,7 @@ export default function CertificationPage() {
             </div>
 
             {/* Deadline */}
-            <div className="liquid-glass-card p-5">
+            <div className="card-apple p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-tight">이행 기한</h3>
               <input
                 type="date"
@@ -386,7 +386,7 @@ export default function CertificationPage() {
           </div>
 
           {/* Success Message */}
-          <div className="liquid-glass-card p-6 mb-6 text-center">
+          <div className="card-apple p-6 mb-6 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-2xl mb-4">
               <IconCheck size={32} className="text-green-600" />
             </div>
@@ -397,7 +397,7 @@ export default function CertificationPage() {
           </div>
 
           {/* Preview */}
-          <div className="liquid-glass-card p-6 mb-6">
+          <div className="card-apple p-6 mb-6">
             <div className="prose prose-sm max-w-none">
               <h3 className="text-center font-bold text-lg mb-6">내 용 증 명</h3>
 

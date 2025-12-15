@@ -273,7 +273,7 @@ export default function ChecklistPage() {
   const progress = totalItems > 0 ? (checkedCount / totalItems) * 100 : 0;
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50/50">
+    <div className="min-h-[100dvh] bg-[#f2f1ee]">
       {/* Header */}
       <header className="bg-white border-b border-gray-200/80 sticky top-0 z-10">
         <div className="px-4 sm:px-5 h-14 flex items-center gap-3 max-w-2xl mx-auto">
@@ -381,7 +381,7 @@ export default function ChecklistPage() {
                 </div>
 
                 {/* Items */}
-                <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
+                <div className="card-apple overflow-hidden">
                   {category.items.map((item, itemIndex) => {
                     const isChecked = checkedItems.has(item.id);
                     const isTipExpanded = expandedTips.has(item.id);
@@ -487,7 +487,7 @@ export default function ChecklistPage() {
 
         {/* Bottom Actions */}
         <div className="mt-8 pb-6">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-[18px] p-5 text-white shadow-lg">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-white/10 backdrop-blur rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

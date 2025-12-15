@@ -57,7 +57,7 @@ DocScanner AI는 근로계약서를 AI로 분석하여 법적 위험 조항을 �
 계약서 분석은 12단계의 순차적 파이프라인으로 진행됩니다.
 
 ```
-1. PII Masking (개인정보 마스킹)
+1. PII Masking (개인정보 마스킹)ㄱㅏㄴ도
        |
 2. Document Parsing (문서 텍스트 추출)
        |
