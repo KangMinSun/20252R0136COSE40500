@@ -1,0 +1,1097 @@
+"use client";
+
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { contractsApi, authApi, User, Contract } from "@/lib/api";
+import {
+  IconUpload,
+  IconDocument,
+  IconCheck,
+  IconLoading,
+  IconLogout,
+  IconSettings,
+  IconPlus,
+  IconUser,
+  IconClose,
+  IconScan,
+  IconChecklist,
+  IconHome,
+  IconHistory,
+  IconList,
+  IconFileText,
+  IconBell,
+  IconSearch,
+  Logo,
+} from "@/components/icons";
+import { cn } from "@/lib/utils";
+
+// Supported file formats
+const SUPPORTED_FORMATS = {
+  document: {
+    extensions: [".pdf", ".hwp", ".hwpx", ".docx", ".doc", ".txt", ".rtf", ".md"],
+    mimeTypes: [
+      "application/pdf",
+      "application/x-hwp",
+      "application/haansofthwp",
+      "application/vnd.hancom.hwp",
+      "application/vnd.hancom.hwpx",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      "text/plain",
+      "text/markdown",
+      "application/rtf",
+    ],
+  },
+  image: {
+    extensions: [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff", ".tif"],
+    mimeTypes: [
+      "image/png",
+      "image/jpeg",
+      "image/gif",
+      "image/webp",
+      "image/bmp",
+      "image/tiff",
+    ],
+  },
+};
+
+const ALL_EXTENSIONS = [
+  ...SUPPORTED_FORMATS.document.extensions,
+  ...SUPPORTED_FORMATS.image.extensions,
+];
+
+const ACCEPT_STRING = [
+  ...ALL_EXTENSIONS,
+  ...SUPPORTED_FORMATS.document.mimeTypes,
+  ...SUPPORTED_FORMATS.image.mimeTypes,
+].join(",");
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+function getFileExtension(filename: string): string {
+  const lastDot = filename.lastIndexOf(".");
+  return lastDot !== -1 ? filename.substring(lastDot).toLowerCase() : "";
+}
+
+function isValidFile(file: File): boolean {
+  const ext = getFileExtension(file.name);
+  return ALL_EXTENSIONS.includes(ext);
+}
+
+function getFileTypeLabel(extension: string): string {
+  const ext = extension.toLowerCase();
+  if (ext === ".pdf") return "PDF";
+  if (ext === ".hwp") return "HWP";
+  if (ext === ".hwpx") return "HWPX";
+  if ([".docx", ".doc"].includes(ext)) return "Word";
+  if ([".txt", ".md", ".rtf"].includes(ext)) return "Text";
+  if (SUPPORTED_FORMATS.image.extensions.includes(ext)) return "Image";
+  return "File";
+}
+
+function getFileIconColor(extension: string): string {
+  const ext = extension.toLowerCase();
+  if (ext === ".pdf") return "bg-red-100 text-red-500";
+  if ([".hwp", ".hwpx"].includes(ext)) return "bg-blue-100 text-blue-500";
+  if ([".docx", ".doc"].includes(ext)) return "bg-blue-100 text-blue-600";
+  if ([".txt", ".md", ".rtf"].includes(ext)) return "bg-gray-100 text-gray-500";
+  if (SUPPORTED_FORMATS.image.extensions.includes(ext)) return "bg-purple-100 text-purple-500";
+  return "bg-gray-100 text-gray-500";
+}
+
+// User Menu Dropdown Component
+function UserMenuDropdown({
+  user,
+  isOpen,
+  onClose,
+  onLogout,
+}: {
+  user: User | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onLogout: () => void;
+}) {
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      ref={dropdownRef}
+      className="absolute left-full bottom-0 ml-2 w-52 bg-white rounded-xl border border-gray-200 shadow-strong overflow-hidden animate-fadeIn z-50"
+    >
+      <div className="px-4 py-3 border-b border-gray-100">
+        <p className="text-sm font-medium text-gray-900 tracking-tight">{user?.username || "사용자"}</p>
+        <p className="text-xs text-gray-500 truncate">{user?.email || ""}</p>
+      </div>
+      <div className="py-1">
+        <Link
+          href="/settings"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <IconSettings size={16} className="text-gray-400" />
+          설정
+        </Link>
+        <button
+          onClick={() => {
+            onLogout();
+            onClose();
+          }}
+          className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <IconLogout size={16} className="text-gray-400" />
+          로그아웃
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Notification type
+interface Notification {
+  id: string;
+  type: "analysis_complete" | "analysis_failed" | "system";
+  title: string;
+  message: string;
+  contract_id?: number;
+  read: boolean;
+  created_at: string;
+}
+
+// Mock notifications data
+const mockNotifications: Notification[] = [
+  {
+    id: "1",
+    type: "analysis_complete",
+    title: "분석 완료",
+    message: "근로계약서_2024.pdf 분석이 완료되었습니다.",
+    contract_id: 1,
+    read: false,
+    created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+  },
+  {
+    id: "2",
+    type: "analysis_complete",
+    title: "분석 완료",
+    message: "임대차계약서.pdf 분석이 완료되었습니다.",
+    contract_id: 2,
+    read: false,
+    created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+  {
+    id: "3",
+    type: "system",
+    title: "서비스 업데이트",
+    message: "새로운 AI 분석 기능이 추가되었습니다.",
+    read: true,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+  },
+];
+
+function formatRelativeTime(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "방금 전";
+  if (diffMins < 60) return `${diffMins}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+  return date.toLocaleDateString("ko-KR");
+}
+
+// Notification Panel Component
+function NotificationPanel({
+  isOpen,
+  onClose,
+  notifications,
+  onMarkAsRead,
+  onNotificationClick,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  notifications: Notification[];
+  onMarkAsRead: (id: string) => void;
+  onNotificationClick: (notification: Notification) => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      ref={panelRef}
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden animate-fadeInUp z-50"
+    >
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-900 tracking-tight">알림</h3>
+          {unreadCount > 0 && (
+            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-500 text-white rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+        >
+          <IconClose size={16} />
+        </button>
+      </div>
+
+      <div className="max-h-80 overflow-y-auto">
+        {notifications.length === 0 ? (
+          <div className="py-12 text-center">
+            <IconBell size={32} className="mx-auto text-gray-300 mb-3" />
+            <p className="text-sm text-gray-500">알림이 없습니다</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {notifications.map((notification) => (
+              <button
+                key={notification.id}
+                onClick={() => {
+                  onMarkAsRead(notification.id);
+                  onNotificationClick(notification);
+                }}
+                className={cn(
+                  "w-full p-4 text-left hover:bg-gray-50 transition-colors",
+                  !notification.read && "bg-blue-50/50"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                    notification.type === "analysis_complete" && "bg-green-100 text-green-600",
+                    notification.type === "analysis_failed" && "bg-red-100 text-red-600",
+                    notification.type === "system" && "bg-blue-100 text-blue-600"
+                  )}>
+                    {notification.type === "analysis_complete" && <IconCheck size={16} />}
+                    {notification.type === "analysis_failed" && <IconClose size={16} />}
+                    {notification.type === "system" && <IconBell size={16} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900 tracking-tight">{notification.title}</p>
+                      {!notification.read && (
+                        <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notification.message}</p>
+                    <p className="text-[10px] text-gray-400 mt-1">{formatRelativeTime(notification.created_at)}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {notifications.length > 0 && (
+        <div className="px-4 py-3 border-t border-gray-100">
+          <button
+            onClick={() => {
+              notifications.forEach((n) => onMarkAsRead(n.id));
+            }}
+            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            모두 읽음으로 표시
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Search Panel Component
+function SearchPanel({
+  isOpen,
+  onClose,
+  contracts,
+  onContractClick,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  contracts: Contract[];
+  onContractClick: (contract: Contract) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const filteredContracts = contracts.filter((contract) =>
+    contract.title.toLowerCase().includes(query.toLowerCase())
+  );
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      ref={panelRef}
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden animate-fadeInUp z-50"
+    >
+      <div className="p-4 border-b border-gray-100">
+        <div className="relative">
+          <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="계약서 검색..."
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border-0 rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900 transition-all"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+            >
+              <IconClose size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="max-h-72 overflow-y-auto">
+        {query === "" ? (
+          <div className="py-12 text-center">
+            <IconSearch size={32} className="mx-auto text-gray-300 mb-3" />
+            <p className="text-sm text-gray-500">검색어를 입력하세요</p>
+          </div>
+        ) : filteredContracts.length === 0 ? (
+          <div className="py-12 text-center">
+            <IconDocument size={32} className="mx-auto text-gray-300 mb-3" />
+            <p className="text-sm text-gray-500">검색 결과가 없습니다</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {filteredContracts.map((contract) => (
+              <button
+                key={contract.id}
+                onClick={() => {
+                  onContractClick(contract);
+                  onClose();
+                }}
+                className="w-full p-4 text-left hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
+                    <IconDocument size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate tracking-tight">{contract.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {new Date(contract.created_at).toLocaleDateString("ko-KR")}
+                    </p>
+                  </div>
+                  {contract.status === "COMPLETED" && (
+                    <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-md">완료</span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+        <p className="text-[10px] text-gray-400 text-center">ESC로 닫기</p>
+      </div>
+    </div>
+  );
+}
+
+// Upload Sidebar Component
+function UploadSidebar({
+  isOpen,
+  onClose,
+  onUploadSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onUploadSuccess: () => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && isValidFile(droppedFile) && droppedFile.size <= MAX_FILE_SIZE) {
+      setFile(droppedFile);
+    }
+  }, []);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile && isValidFile(selectedFile) && selectedFile.size <= MAX_FILE_SIZE) {
+      setFile(selectedFile);
+    }
+  }, []);
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setUploading(true);
+
+    try {
+      await contractsApi.upload(file);
+      setUploadSuccess(true);
+      setTimeout(() => {
+        onUploadSuccess();
+        handleReset();
+        onClose();
+      }, 1500);
+    } catch {
+      // Error handling
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setFile(null);
+    setUploadSuccess(false);
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setTimeout(() => {
+        handleReset();
+      }, 300);
+    }
+  }, [isOpen]);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className={cn(
+          "fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40 transition-opacity duration-300",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={onClose}
+      />
+
+      {/* Sidebar */}
+      <div
+        ref={sidebarRef}
+        className={cn(
+          "fixed bg-white shadow-2xl z-50 transition-transform duration-300 ease-out",
+          "inset-x-0 bottom-0 h-[85vh] rounded-t-3xl",
+          "sm:inset-y-0 sm:left-auto sm:right-0 sm:h-full sm:w-[420px] sm:rounded-none",
+          isOpen
+            ? "translate-y-0 sm:translate-y-0 sm:translate-x-0"
+            : "translate-y-full sm:translate-y-0 sm:translate-x-full"
+        )}
+      >
+        {/* Mobile handle */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-900 tracking-tight">계약서 업로드</h2>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+          >
+            <IconClose size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 sm:p-6 h-[calc(100%-4rem)] sm:h-[calc(100%-4rem)] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+          {uploadSuccess ? (
+            <div className="flex flex-col items-center justify-center h-full animate-scaleIn">
+              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
+                <IconCheck size={32} className="text-green-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">업로드 완료</h3>
+              <p className="text-sm text-gray-500 text-center">
+                AI 분석이 시작되었습니다
+              </p>
+            </div>
+          ) : !file ? (
+            <div className="space-y-6">
+              {/* Upload Area */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={cn(
+                  "relative group cursor-pointer rounded-2xl transition-all duration-300 overflow-hidden",
+                  isDragging
+                    ? "ring-2 ring-gray-900 ring-offset-4"
+                    : "hover:ring-2 hover:ring-gray-200 hover:ring-offset-2"
+                )}
+              >
+                <div className={cn(
+                  "relative p-10 text-center bg-gradient-to-br from-gray-50 via-white to-gray-50 transition-all duration-300",
+                  isDragging && "from-gray-100 via-gray-50 to-gray-100"
+                )}>
+                  <div className="absolute inset-0 opacity-[0.03]">
+                    <div className="absolute top-4 left-4 w-24 h-24 border border-gray-900 rounded-2xl" />
+                    <div className="absolute bottom-4 right-4 w-16 h-16 border border-gray-900 rounded-xl" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-gray-900 rounded-3xl rotate-12" />
+                  </div>
+
+                  <div className={cn(
+                    "relative inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 transition-all duration-300",
+                    isDragging
+                      ? "bg-gray-900 text-white scale-110"
+                      : "bg-gray-100 text-gray-400 group-hover:bg-gray-900 group-hover:text-white group-hover:scale-105"
+                  )}>
+                    <IconUpload size={28} />
+                  </div>
+
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">
+                    {isDragging ? "여기에 놓으세요" : "계약서 업로드"}
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    드래그하여 놓거나 클릭하여 선택
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-all"
+                  >
+                    <IconDocument size={16} />
+                    파일 선택
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ACCEPT_STRING}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
+                  <p className="text-xs text-gray-400 mt-4">PDF, HWP, Word, TXT, 이미지 (최대 50MB)</p>
+                </div>
+              </div>
+
+              {/* Supported Formats */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">지원 형식</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {["PDF", "HWP", "DOCX", "TXT"].map((fmt) => (
+                    <span key={fmt} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                      {fmt}
+                    </span>
+                  ))}
+                  {["PNG", "JPG"].map((fmt) => (
+                    <span key={fmt} className="px-2 py-1 text-xs bg-purple-50 text-purple-600 rounded">
+                      {fmt}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Process Info */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">분석 과정</h4>
+                <div className="space-y-2">
+                  {[
+                    "문서 파싱 및 텍스트 추출",
+                    "AI가 위험 조항 식별",
+                    "법률 근거 기반 분석",
+                  ].map((text, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm text-gray-500">
+                      <span className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                        {i + 1}
+                      </span>
+                      {text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6 animate-fadeInUp">
+              {/* Selected File */}
+              <div className="p-5 bg-gray-50 rounded-2xl">
+                <div className="flex items-center gap-4">
+                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0", getFileIconColor(getFileExtension(file.name)))}>
+                    <IconDocument size={24} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                      <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-gray-200 text-gray-600 rounded">
+                        {getFileTypeLabel(getFileExtension(file.name))}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleReset}
+                    disabled={uploading}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-all disabled:opacity-50"
+                  >
+                    <IconClose size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Upload Button */}
+              <button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-medium text-white bg-gray-900 rounded-xl shadow-sm hover:bg-gray-800 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {uploading ? (
+                  <>
+                    <IconLoading size={18} />
+                    분석 중...
+                  </>
+                ) : (
+                  <>
+                    <IconUpload size={18} />
+                    AI 분석 시작
+                  </>
+                )}
+              </button>
+
+              {/* Change File */}
+              <label className="block text-center">
+                <span className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors">
+                  다른 파일 선택
+                </span>
+                <input
+                  type="file"
+                  accept={ACCEPT_STRING}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={uploading}
+                />
+              </label>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [user, setUser] = useState<User | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showUploadSidebar, setShowUploadSidebar] = useState(false);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+
+  useEffect(() => {
+    if (!authApi.isAuthenticated()) {
+      router.push("/login");
+      return;
+    }
+    setIsAuthenticated(true);
+    loadUser();
+    loadContracts();
+    setIsLoading(false);
+  }, [router]);
+
+  async function loadUser() {
+    try {
+      const userData = await authApi.getMe();
+      setUser(userData);
+    } catch {
+      // Silently fail
+    }
+  }
+
+  async function loadContracts() {
+    try {
+      const data = await contractsApi.list();
+      setContracts(data);
+    } catch {
+      // Silently fail
+    }
+  }
+
+  function handleLogout() {
+    authApi.logout();
+    router.push("/login");
+  }
+
+  function handleUploadSuccess() {
+    // Refresh the page or notify child components
+    window.location.reload();
+  }
+
+  function handleMarkNotificationAsRead(id: string) {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  }
+
+  function handleNotificationClick(notification: Notification) {
+    if (notification.contract_id) {
+      router.push(`/analysis/${notification.contract_id}`);
+    }
+    setShowNotificationPanel(false);
+  }
+
+  function handleContractClick(contract: Contract) {
+    if (contract.status === "COMPLETED") {
+      router.push(`/analysis/${contract.id}`);
+    }
+  }
+
+  const unreadNotificationCount = notifications.filter((n) => !n.read).length;
+
+  const navItems = [
+    { href: "/", icon: IconHome, label: "대시보드" },
+    { href: "/history", icon: IconList, label: "분석 기록" },
+    { href: "/certification", icon: IconFileText, label: "내용증명 작성" },
+    { href: "/contract-revisions", icon: IconHistory, label: "수정 기록" },
+  ];
+
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
+        <div className="flex flex-col items-center gap-3 animate-fadeIn">
+          <IconLoading size={32} className="text-gray-400" />
+          <p className="text-sm text-gray-500">불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Floating Island Sidebar */}
+      <div
+        className="hidden lg:block fixed left-4 top-1/2 -translate-y-1/2 z-30"
+        onMouseEnter={() => setSidebarExpanded(true)}
+        onMouseLeave={() => setSidebarExpanded(false)}
+      >
+        <div
+          className={cn(
+            "relative bg-white/70 backdrop-blur-2xl border border-white/50 shadow-2xl overflow-hidden transition-all duration-500 ease-out",
+            sidebarExpanded ? "w-56 rounded-3xl" : "w-16 rounded-2xl"
+          )}
+          style={{
+            boxShadow: sidebarExpanded
+              ? '0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5) inset'
+              : '0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5) inset'
+          }}
+        >
+          {/* Logo Area */}
+          <div className={cn(
+            "flex items-center gap-3 p-4 border-b border-gray-100/50 transition-all duration-300",
+            sidebarExpanded ? "justify-start" : "justify-center"
+          )}>
+            <Logo size={28} color="#111827" className="flex-shrink-0" />
+            <span className={cn(
+              "text-sm font-semibold text-gray-900 tracking-tight whitespace-nowrap transition-all duration-300",
+              sidebarExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 absolute"
+            )}>
+              DocScanner
+            </span>
+          </div>
+
+          {/* Navigation */}
+          <nav className="p-2 space-y-1">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "group flex items-center h-11 rounded-xl transition-all duration-200 overflow-hidden",
+                    isActive
+                      ? "bg-gray-900/5 text-gray-900"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-100/50",
+                    sidebarExpanded ? "px-3 gap-3" : "justify-center"
+                  )}
+                >
+                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                    <Icon size={20} className={!isActive ? "group-hover:scale-110 transition-transform" : ""} />
+                  </div>
+                  <span className={cn(
+                    "text-sm font-medium tracking-tight whitespace-nowrap transition-all duration-300",
+                    sidebarExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+                  )}>
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Divider */}
+          <div className="mx-3 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+
+          {/* User Account */}
+          <div className="p-2">
+            <div className="relative">
+              <div className={cn(
+                "flex items-center h-11 w-full rounded-xl transition-all duration-200 overflow-hidden",
+                sidebarExpanded ? "px-3 justify-between" : "justify-center"
+              )}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className={cn(
+                    "group flex items-center gap-3 text-gray-600 hover:text-gray-900 transition-all duration-200 flex-shrink-0",
+                    showUserMenu && "text-gray-900"
+                  )}
+                >
+                  <div className="w-7 h-7 bg-gradient-to-br from-gray-600 to-gray-800 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                    {user?.username?.charAt(0).toUpperCase() || <IconUser size={14} />}
+                  </div>
+                  {sidebarExpanded && (
+                    <span className="text-sm font-medium tracking-tight whitespace-nowrap truncate">
+                      {user?.username || "내 계정"}
+                    </span>
+                  )}
+                </button>
+                {/* Settings Icon */}
+                {sidebarExpanded && (
+                  <Link
+                    href="/settings"
+                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all flex-shrink-0"
+                  >
+                    <IconSettings size={16} />
+                  </Link>
+                )}
+              </div>
+              {/* User Menu */}
+              {showUserMenu && sidebarExpanded && (
+                <UserMenuDropdown
+                  user={user}
+                  isOpen={showUserMenu}
+                  onClose={() => setShowUserMenu(false)}
+                  onLogout={handleLogout}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Expand Indicator */}
+          <div className={cn(
+            "absolute right-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-300 rounded-full transition-all duration-300",
+            sidebarExpanded ? "opacity-0 scale-0" : "opacity-50"
+          )} />
+        </div>
+      </div>
+
+      {/* Mobile Header */}
+      <header className="fixed top-0 left-0 right-0 z-20 px-4 sm:px-6 py-4 lg:hidden">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Logo size={32} color="#111827" />
+            <span className="text-base font-semibold text-gray-900 tracking-tight">DocScanner AI</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Floating Dock */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
+        <div className="flex items-center gap-1 px-2 py-2 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-lg">
+          <Link
+            href="/scan"
+            className={cn(
+              "group flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all duration-200",
+              pathname === "/scan"
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100/80"
+            )}
+          >
+            <IconScan size={22} className={pathname !== "/scan" ? "group-hover:scale-110 transition-transform" : ""} />
+            <span className="text-[10px] font-medium mt-1 tracking-tight">스캔</span>
+          </Link>
+
+          <Link
+            href="/checklist"
+            className={cn(
+              "group flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all duration-200",
+              pathname === "/checklist"
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100/80"
+            )}
+          >
+            <IconChecklist size={22} className={pathname !== "/checklist" ? "group-hover:scale-110 transition-transform" : ""} />
+            <span className="text-[10px] font-medium mt-1 tracking-tight">체크리스트</span>
+          </Link>
+
+          <button
+            onClick={() => setShowUploadSidebar(true)}
+            className="group flex flex-col items-center justify-center w-16 h-16 -my-1 bg-gray-900 text-white rounded-2xl shadow-lg hover:bg-gray-800 hover:scale-105 active:scale-95 transition-all duration-200"
+          >
+            <IconPlus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[10px] font-medium mt-0.5 tracking-tight">업로드</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowNotificationPanel(!showNotificationPanel);
+              setShowSearchPanel(false);
+            }}
+            className={cn(
+              "group flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all duration-200 relative",
+              showNotificationPanel
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100/80"
+            )}
+          >
+            <IconBell size={22} className={!showNotificationPanel ? "group-hover:scale-110 transition-transform" : ""} />
+            <span className="text-[10px] font-medium mt-1 tracking-tight">알림</span>
+            {unreadNotificationCount > 0 && (
+              <span className="absolute top-2 right-2 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              setShowSearchPanel(!showSearchPanel);
+              setShowNotificationPanel(false);
+            }}
+            className={cn(
+              "group flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all duration-200",
+              showSearchPanel
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100/80"
+            )}
+          >
+            <IconSearch size={22} className={!showSearchPanel ? "group-hover:scale-110 transition-transform" : ""} />
+            <span className="text-[10px] font-medium mt-1 tracking-tight">검색</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className={cn(
+        "max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-32 transition-all duration-500 ease-out",
+        sidebarExpanded && "lg:pl-56"
+      )}>
+        {children}
+      </main>
+
+      {/* Upload Sidebar */}
+      <UploadSidebar
+        isOpen={showUploadSidebar}
+        onClose={() => setShowUploadSidebar(false)}
+        onUploadSuccess={handleUploadSuccess}
+      />
+
+      {/* Notification Panel */}
+      <NotificationPanel
+        isOpen={showNotificationPanel}
+        onClose={() => setShowNotificationPanel(false)}
+        notifications={notifications}
+        onMarkAsRead={handleMarkNotificationAsRead}
+        onNotificationClick={handleNotificationClick}
+      />
+
+      {/* Search Panel */}
+      <SearchPanel
+        isOpen={showSearchPanel}
+        onClose={() => setShowSearchPanel(false)}
+        contracts={contracts}
+        onContractClick={handleContractClick}
+      />
+    </div>
+  );
+}
