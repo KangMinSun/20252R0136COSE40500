@@ -1041,55 +1041,53 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
         </div>
       </div>
 
-      {/* Chat Panel */}
-      {showChat && (
-        <>
-          {/* Mobile: Full screen overlay */}
-          <div className="md:hidden fixed inset-0 bg-white z-50 animate-slideInUp">
-            <ChatPanel
-              contractId={parseInt(id)}
-              initialQuestion={chatInitialQuestion}
-              messages={chatMessages}
-              setMessages={setChatMessages}
-              onClose={() => {
-                setShowChat(false);
-                setChatInitialQuestion(undefined);
-              }}
-            />
-          </div>
+      {/* Chat Panel - Only render one based on screen size to prevent duplicate messages */}
+      {showChat && isMobile && (
+        <div className="fixed inset-0 bg-white z-50 animate-slideInUp">
+          <ChatPanel
+            contractId={parseInt(id)}
+            initialQuestion={chatInitialQuestion}
+            messages={chatMessages}
+            setMessages={setChatMessages}
+            onClose={() => {
+              setShowChat(false);
+              setChatInitialQuestion(undefined);
+            }}
+          />
+        </div>
+      )}
 
-          {/* Desktop: Side panel */}
+      {showChat && !isMobile && (
+        <div
+          className="fixed right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-strong z-40"
+          style={{ width: chatWidth }}
+        >
+          {/* Resize Handle */}
           <div
-            className="hidden md:block fixed right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-strong z-40"
-            style={{ width: chatWidth }}
+            onMouseDown={handleResizeStart}
+            className={cn(
+              "absolute -left-1 top-0 bottom-0 w-2 cursor-ew-resize group z-10",
+              "flex items-center justify-center"
+            )}
           >
-            {/* Resize Handle */}
-            <div
-              onMouseDown={handleResizeStart}
-              className={cn(
-                "absolute -left-1 top-0 bottom-0 w-2 cursor-ew-resize group z-10",
-                "flex items-center justify-center"
-              )}
-            >
-              {/* Subtle line indicator */}
-              <div className={cn(
-                "w-0.5 h-8 rounded-full transition-all duration-200",
-                "bg-gray-200 group-hover:bg-gray-400 group-hover:h-12",
-                isResizing && "bg-blue-500 h-16"
-              )} />
-            </div>
-            <ChatPanel
-              contractId={parseInt(id)}
-              initialQuestion={chatInitialQuestion}
-              messages={chatMessages}
-              setMessages={setChatMessages}
-              onClose={() => {
-                setShowChat(false);
-                setChatInitialQuestion(undefined);
-              }}
-            />
+            {/* Subtle line indicator */}
+            <div className={cn(
+              "w-0.5 h-8 rounded-full transition-all duration-200",
+              "bg-gray-200 group-hover:bg-gray-400 group-hover:h-12",
+              isResizing && "bg-blue-500 h-16"
+            )} />
           </div>
-        </>
+          <ChatPanel
+            contractId={parseInt(id)}
+            initialQuestion={chatInitialQuestion}
+            messages={chatMessages}
+            setMessages={setChatMessages}
+            onClose={() => {
+              setShowChat(false);
+              setChatInitialQuestion(undefined);
+            }}
+          />
+        </div>
       )}
 
       {/* Text Selection Tooltip */}

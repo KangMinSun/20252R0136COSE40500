@@ -8,6 +8,7 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 import os
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,9 +17,20 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv(dotenv_path=project_root / ".env")
 
 from app.core.database import engine, Base
+from app.core.initializers import run_all_initializers
 from app.api.v1 import auth, contracts, users, analysis, search, chat, agent_chat, scan, checklist
 from fastapi.staticfiles import StaticFiles
 import uvicorn
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler for startup/shutdown events."""
+    # Startup
+    await run_all_initializers()
+    yield
+    # Shutdown (nothing needed for now)
+
 
 app = FastAPI(
     title="DocScanner AI API",
@@ -29,7 +41,8 @@ app = FastAPI(
     """,
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # CORS 설정 (환경변수로 제어, 쉼표로 구분)
@@ -45,15 +58,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔴 [보완] DB 테이블 생성 이벤트 (Alembic 사용 시에는 주석 처리 권장)
-# @app.on_event("startup")
-# async def init_tables():
-#     # Note: Alembic 사용 시 이 코드를 실행하면 안 됩니다.
-#     # 다만, 개발 편의상 필요할 때만 주석을 해제하여 사용합니다.
-#     # async with engine.begin() as conn:
-#     #     await conn.run_sync(Base.metadata.create_all)
-#     # print("✅ DB 테이블 생성 완료!")
-    
 # 정적 파일 경로 등록
 app.mount("/storage", StaticFiles(directory="storage"), name="storage")
 

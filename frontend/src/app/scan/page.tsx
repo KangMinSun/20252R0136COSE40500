@@ -217,30 +217,14 @@ export default function ScanPage() {
       drawOverlays(result.detected_clauses);
     } catch (error) {
       console.error(">>> Quick scan error:", error);
-      // Demo mode: show mock result
-      const mockResult: QuickScanResult = {
-        risk_level: "MEDIUM",
-        detected_clauses: [
-          {
-            text: "계약 해지 시 위약금 300%",
-            risk_level: "HIGH",
-            keyword: "위약금",
-          },
-          {
-            text: "초과 근무 수당 미지급",
-            risk_level: "HIGH",
-            keyword: "초과 근무",
-          },
-          {
-            text: "연차 사용 제한",
-            risk_level: "MEDIUM",
-            keyword: "연차",
-          },
-        ],
-        summary: "3건의 주의 조항이 발견되었습니다.",
-        scan_time_ms: 2100,
+      // 에러 발생 시 사용자에게 알림
+      const errorResult: QuickScanResult = {
+        risk_level: "SAFE",
+        detected_clauses: [],
+        summary: "스캔 중 오류가 발생했습니다. 네트워크 연결을 확인하고 다시 시도해주세요.",
+        scan_time_ms: 0,
       };
-      setScanResult(mockResult);
+      setScanResult(errorResult);
     } finally {
       setIsScanning(false);
     }
