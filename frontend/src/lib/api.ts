@@ -307,7 +307,7 @@ export const contractsApi = {
     const formData = new FormData();
     formData.append("file", file);
 
-    return request("/api/v1/contracts/", {
+    return request("/api/v1/contracts", {
       method: "POST",
       body: formData,
     });
