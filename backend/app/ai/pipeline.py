@@ -350,6 +350,14 @@ class AdvancedAIPipeline:
         logger = get_pipeline_logger(contract_id)
         logger.log_step("Pipeline", "started", input_summary=f"Text length: {len(contract_text)} chars")
 
+        # 입력 계약서 전문 로깅
+        logger.log_detail(
+            step_name="Pipeline",
+            category="InputContract",
+            data=contract_text,
+            description=f"입력 계약서 전문 ({len(contract_text)} chars)"
+        )
+
         # 토큰 사용량 추적기 초기화
         token_tracker = TokenUsageTracker(contract_id, save_to_file=True)
         TokenUsageTracker.set_active(token_tracker)
@@ -362,6 +370,9 @@ class AdvancedAIPipeline:
         self.judge.contract_id = contract_id
         self.redliner.contract_id = contract_id
         self.clause_analyzer.contract_id = contract_id
+
+        # 상세 로깅을 위해 logger 전달
+        self.clause_analyzer.pipeline_logger = logger
 
         try:
             # 1. PII Masking (개인정보 비식별화)
@@ -461,6 +472,41 @@ class AdvancedAIPipeline:
                             "high_severity_count": result.clause_analysis.high_severity_count,
                             "annual_underpayment": result.clause_analysis.annual_underpayment
                         }
+                    )
+
+                    # 상세 로깅: 추출된 조항 전체
+                    logger.log_detail(
+                        step_name="ClauseAnalysis",
+                        category="ExtractedClauses",
+                        data=[{
+                            "number": c.clause_number,
+                            "type": c.clause_type.value,
+                            "title": c.title,
+                            "text": c.original_text,
+                            "values": c.extracted_values,
+                            "position": c.position
+                        } for c in result.clause_analysis.clauses],
+                        description=f"추출된 조항 {len(result.clause_analysis.clauses)}개"
+                    )
+
+                    # 상세 로깅: 발견된 위반 전체
+                    logger.log_detail(
+                        step_name="ClauseAnalysis",
+                        category="DetectedViolations",
+                        data=[{
+                            "clause_number": v.clause.clause_number,
+                            "type": v.violation_type,
+                            "severity": v.severity.value,
+                            "description": v.description,
+                            "legal_basis": v.legal_basis,
+                            "current_value": v.current_value,
+                            "legal_standard": v.legal_standard,
+                            "suggestion": v.suggestion,
+                            "suggested_text": v.suggested_text,
+                            "confidence": v.confidence,
+                            "crag_sources": v.crag_sources
+                        } for v in result.clause_analysis.violations],
+                        description=f"발견된 위반 {result.clause_analysis.violation_count}개"
                     )
 
                     # 4-1. ViolationLocationMapper: 위치 매핑 및 수정안 생성 (Gemini)

@@ -713,7 +713,8 @@ class LLMClauseAnalyzer:
         crag: Optional[Any] = None,
         llm_client: Optional[Any] = None,
         model: str = None,
-        enable_crag: bool = True
+        enable_crag: bool = True,
+        pipeline_logger: Optional[Any] = None
     ):
         """
         Args:
@@ -721,12 +722,14 @@ class LLMClauseAnalyzer:
             llm_client: OpenAI 클라이언트
             model: 사용할 LLM 모델 (기본값: settings.LLM_REASONING_MODEL)
             enable_crag: CRAG 검색 활성화 여부
+            pipeline_logger: PipelineLogger 인스턴스 (상세 로깅용)
         """
         self.crag = crag
         # 모델 기본값: settings에서 가져옴
         self.model = model if model else settings.LLM_CLAUSE_ANALYZER_MODEL
         self.enable_crag = enable_crag
         self.contract_id: Optional[str] = None  # 토큰 추적용
+        self.pipeline_logger = pipeline_logger  # 상세 로깅용
 
         if llm_client is None:
             try:
@@ -1646,7 +1649,21 @@ class LLMClauseAnalyzer:
                     duration_ms=llm_duration
                 )
 
-            result = json.loads(response.choices[0].message.content)
+            response_content = response.choices[0].message.content
+            result = json.loads(response_content)
+
+            # 상세 로깅: LLM 프롬프트/응답 전문
+            if self.pipeline_logger:
+                self.pipeline_logger.log_llm_call(
+                    step_name="ClauseExtraction",
+                    model=self.model,
+                    prompt=prompt,
+                    response=response_content,
+                    temperature=0.1 if not self._is_reasoning_model() else 0.0,
+                    duration_ms=llm_duration,
+                    extra={"clause_count": len(result.get("clauses", []))}
+                )
+
             clauses = []
 
             for c in result.get("clauses", []):
@@ -1865,7 +1882,37 @@ class LLMClauseAnalyzer:
                         duration_ms=llm_duration
                     )
 
-                result = json.loads(response.choices[0].message.content)
+                response_content = response.choices[0].message.content
+                result = json.loads(response_content)
+
+                # 상세 로깅: 조항별 위반 분석 LLM 호출
+                if self.pipeline_logger:
+                    self.pipeline_logger.log_llm_call(
+                        step_name=f"ViolationAnalysis_{clause.clause_number}",
+                        model=self.model,
+                        prompt=prompt,
+                        response=response_content,
+                        temperature=0.1 if not self._is_reasoning_model() else 0.0,
+                        duration_ms=llm_duration,
+                        extra={
+                            "clause_type": clause.clause_type.value,
+                            "has_violation": result.get("has_violation", False),
+                            "violation_count": len(result.get("violations", []))
+                        }
+                    )
+                    # 검색된 법률 컨텍스트도 로깅
+                    self.pipeline_logger.log_retrieval(
+                        step_name=f"LegalContext_{clause.clause_number}",
+                        query=clause.original_text[:200],
+                        results=[
+                            {"type": "law", "content": law_context},
+                            {"type": "precedent", "content": precedent_context},
+                            {"type": "interpretation", "content": interpretation_context},
+                            {"type": "pattern", "content": pattern_context or "없음"}
+                        ],
+                        retrieval_type="hybrid",
+                        extra={"crag_sources": crag_sources}
+                    )
 
                 if result.get("has_violation", False):
                     for v in result.get("violations", []):
@@ -2152,7 +2199,23 @@ class LLMClauseAnalyzer:
                     duration_ms=llm_duration
                 )
 
-            result = json.loads(response.choices[0].message.content)
+            response_content = response.choices[0].message.content
+            result = json.loads(response_content)
+
+            # 상세 로깅: 종합 분석 LLM 호출
+            if self.pipeline_logger:
+                self.pipeline_logger.log_llm_call(
+                    step_name="HolisticAnalysis",
+                    model=self.model,
+                    prompt=prompt,
+                    response=response_content,
+                    temperature=0.1 if not self._is_reasoning_model() else 0.0,
+                    duration_ms=llm_duration,
+                    extra={
+                        "violation_count": len(result.get("holistic_violations", [])),
+                        "min_wage_violation": result.get("minimum_wage_analysis", {}).get("is_violation", False)
+                    }
+                )
 
             # 종합 위반 사항 처리
             for v in result.get("holistic_violations", []):
