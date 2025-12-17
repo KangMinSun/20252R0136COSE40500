@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.core.timezone import now_utc
 
 
 class Contract(Base):
@@ -17,7 +17,7 @@ class Contract(Base):
     extracted_text = Column(Text, nullable=True)  # PDF에서 추출된 원본 텍스트
     analysis_result = Column(JSONB, nullable=True)
     risk_level = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=now_utc)
 
     user = relationship("User", backref="contracts")
     versions = relationship("DocumentVersion", back_populates="contract", order_by="DocumentVersion.version_number")
@@ -36,7 +36,7 @@ class DocumentVersion(Base):
     change_summary = Column(String, nullable=True)  # 변경 요약 설명
 
     is_current = Column(Boolean, default=False)  # 현재 활성 버전인지
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=now_utc)
     created_by = Column(String, nullable=True)  # "user" 또는 "ai"
 
     contract = relationship("Contract", back_populates="versions")
