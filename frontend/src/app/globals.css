@@ -1,4 +1,5 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -41,13 +42,144 @@
 
 html, body {
   color: hsl(var(--foreground));
-  background: #f2f1ee;
+  background: #f8f9fa;
   font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   letter-spacing: -0.025em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Inter font for English and numbers */
+.font-inter {
+  font-family: 'Inter', 'Pretendard Variable', sans-serif;
+  font-feature-settings: 'tnum' on, 'lnum' on;
+}
+
+/* Stat numbers - large display */
+.stat-number {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-feature-settings: 'tnum' on;
+}
+
+/* Gradient blob background */
+.gradient-blob-bg {
+  position: relative;
+  background: #f8f9fa;
+}
+
+.gradient-blob-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 5% 15%, rgba(220, 235, 224, 0.95) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 95% 85%, rgba(254, 243, 210, 0.7) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 60% 5%, rgba(220, 240, 226, 0.8) 0%, transparent 45%),
+    radial-gradient(ellipse 40% 30% at 80% 30%, rgba(250, 235, 215, 0.6) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Grain/Noise texture overlay - grayscale */
+.gradient-blob-bg::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Icon Dock Sidebar - Liquid Glass Effect */
+.icon-dock {
+  /* display is controlled by Tailwind (hidden lg:flex) */
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(255, 255, 255, 0.5) 30%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-left-color: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 1px rgba(255, 255, 255, 0.8),
+    inset 1px 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center center;
+}
+
+.icon-dock:hover {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.6) 30%,
+    rgba(255, 255, 255, 0.5) 100%
+  );
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    inset 0 1px 2px rgba(255, 255, 255, 0.9),
+    inset 1px 0 1px rgba(255, 255, 255, 0.6),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.03);
+  transform: translateY(-50%) scale(1.04);
+}
+
+.dock-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  color: #9ca3af;
+  transition: all 0.2s ease, transform 0.1s ease;
+}
+
+.dock-icon:hover {
+  color: #6b7280;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.dock-icon:active {
+  transform: scale(0.85);
+  transition: transform 0.1s ease;
+}
+
+.dock-icon.active {
+  color: #1a1a1a;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Card V2 - More subtle shadows */
+.card-v2 {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.card-v2:hover {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
 /* 스크롤바 스타일 - 스크롤 시에만 표시 */
@@ -208,6 +340,17 @@ textarea::placeholder {
   }
 }
 
+@keyframes fadeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
@@ -245,6 +388,10 @@ textarea::placeholder {
 
 .animate-scaleIn {
   animation: scaleIn 0.2s ease-out;
+}
+
+.animate-fadeScaleIn {
+  animation: fadeScaleIn 0.15s ease-out;
 }
 
 .animate-pulse {
@@ -773,41 +920,33 @@ textarea::placeholder {
 }
 
 .contract-markdown ol {
-  list-style: none;
-  padding-left: 0;
+  list-style-type: decimal;
+  padding-left: 1.5em;
   margin: 0.75em 0;
 }
 
 .contract-markdown ol > li {
-  position: relative;
-  padding-left: 2em;
   margin: 0.5em 0;
+  padding-left: 0.5em;
 }
 
-.contract-markdown ol > li::before {
-  content: counter(list-item) ".";
-  position: absolute;
-  left: 0;
+.contract-markdown ol > li::marker {
   font-weight: 600;
   color: hsl(0 0% 30%);
 }
 
 .contract-markdown ul {
-  list-style: none;
+  list-style-type: disc;
   padding-left: 1.5em;
   margin: 0.5em 0;
 }
 
 .contract-markdown ul > li {
-  position: relative;
-  padding-left: 1em;
   margin: 0.35em 0;
+  padding-left: 0.25em;
 }
 
-.contract-markdown ul > li::before {
-  content: "-";
-  position: absolute;
-  left: 0;
+.contract-markdown ul > li::marker {
   color: hsl(0 0% 50%);
 }
 
@@ -857,6 +996,106 @@ textarea::placeholder {
 .contract-markdown hr + ul,
 .contract-markdown hr + ol {
   margin-top: 1em;
+}
+
+/* 서명 테이블 (hr 다음에 오는 테이블) */
+.contract-markdown hr + table {
+  margin-top: 1.5em;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.contract-markdown hr + table th:first-child,
+.contract-markdown hr + table td:first-child {
+  text-align: center;
+  font-weight: 600;
+  background: hsl(0 0% 97%);
+  width: 100px;
+}
+
+/* Contract markdown: 코드 블록 스타일 비활성화 - 일반 텍스트처럼 표시 */
+.contract-markdown code,
+.contract-markdown pre {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  font-family: inherit;
+  white-space: pre-wrap;
+  overflow: visible;
+  margin: 0;
+}
+
+.contract-markdown pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* Inline Highlight Mark styles - 인라인 형광펜 효과 */
+.highlight-mark {
+  display: inline;
+  cursor: pointer;
+  padding: 0.05em 0.1em;
+  margin: 0;
+  border-radius: 2px;
+  transition: background 0.2s ease;
+  text-decoration: none;
+  background-color: transparent;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* mark 태그 안의 블록 요소도 인라인으로 처리 */
+.highlight-mark p,
+.highlight-mark div,
+.highlight-mark li {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+/* High risk - 빨간색 형광펜 */
+.highlight-mark-high {
+  background-color: rgba(201, 75, 69, 0.2);
+}
+
+.highlight-mark-high:hover {
+  background-color: rgba(201, 75, 69, 0.3);
+}
+
+/* Medium risk - 노란색 형광펜 */
+.highlight-mark-medium {
+  background-color: rgba(212, 168, 77, 0.2);
+}
+
+.highlight-mark-medium:hover {
+  background-color: rgba(212, 168, 77, 0.3);
+}
+
+/* Low risk - 초록색 형광펜 */
+.highlight-mark-low {
+  background-color: rgba(74, 154, 91, 0.2);
+}
+
+.highlight-mark-low:hover {
+  background-color: rgba(74, 154, 91, 0.3);
+}
+
+/* Active highlight mark - 선택된 하이라이트 강조 */
+.highlight-mark-active.highlight-mark-high {
+  background-color: rgba(201, 75, 69, 0.5) !important;
+  box-shadow: 0 1px 4px rgba(201, 75, 69, 0.4);
+}
+
+.highlight-mark-active.highlight-mark-medium {
+  background-color: rgba(212, 168, 77, 0.5) !important;
+  box-shadow: 0 1px 4px rgba(212, 168, 77, 0.4);
+}
+
+.highlight-mark-active.highlight-mark-low {
+  background-color: rgba(74, 154, 91, 0.5) !important;
+  box-shadow: 0 1px 4px rgba(74, 154, 91, 0.4);
 }
 
 /* Safe Area Insets for mobile devices */
@@ -1363,25 +1602,82 @@ textarea::placeholder {
   border-radius: 28px 28px 0 0;
 }
 
-/* Liquid glass input */
+/* Notification Dropdown - Refined Glass Style */
+.notification-dropdown {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.85) 100%
+  );
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Liquid glass input - Apple style */
 .liquid-input {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 14px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+  transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  outline: none !important;
 }
 
 .liquid-input:hover {
-  background: rgba(255, 255, 255, 0.6);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
 }
 
-.liquid-input:focus {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.03);
+.liquid-input:focus,
+.liquid-input:focus-visible {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(255, 255, 255, 0.55) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+  outline: none;
+}
+
+/* Liquid input wrapper - for scaling with icon */
+.liquid-input-wrapper {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-input-wrapper:focus-within {
+  transform: scale(1.01);
 }
 
 /* Liquid glass button */
