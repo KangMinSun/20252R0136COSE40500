@@ -35,6 +35,6 @@ celery_app.conf.update(
     timezone='Asia/Seoul',
     enable_utc=False,
     # Celery Timeouts 설정
-    task_soft_time_limit=300,  # 5분 soft limit
-    task_time_limit=360,       # 6분 hard limit
+    task_soft_time_limit=600,  # 10분 soft limit
+    task_time_limit=900,       # 15분 hard limit
 )
