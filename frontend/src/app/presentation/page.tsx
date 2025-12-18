@@ -2902,7 +2902,7 @@ export default function PresentationPage() {
                     </div>
                     <div className="w-full p-2 border" style={{ backgroundColor: '#f9fafb', borderColor: '#e5e7eb', borderRadius: '8px' }}>
                       <div className="text-[9px] font-mono p-2 mb-2" style={{ backgroundColor: '#ffffff', borderRadius: '4px', color: '#374151', border: '1px solid #e5e7eb' }}>
-                        "{t("overtime pay clause", "초과근무 수당 조항")}"
+                        &quot;{t("overtime pay clause", "초과근무 수당 조항")}&quot;
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-1">
