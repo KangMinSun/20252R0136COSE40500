@@ -132,7 +132,7 @@ async def start_session(
     - **동작 방식:**
         1. 사용자의 메시지(`user_message`)를 분석하여 이름, 날짜, 피해 사실 등의 정보를 추출(`extracted_info`)하여 저장함.
         2. 아직 수집되지 않은 필수 정보가 있다면, 이를 묻는 다음 질문(`ai_message`)을 생성함.
-        3. 모든 필수 정보가 수집되면 `is_complete: true`를 반환함.
+        3. 모든 필수 정보가 수집되었다면 `is_complete: true`를 반환함.
     """,
     responses={
         404: {"description": "유효하지 않은 세션 ID"}
